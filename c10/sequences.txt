@@ -1,0 +1,124 @@
+>> ACT_GOTO_SCHOOL_WEEKDAY
+
+1. Play: /home/tme520/Videos/LPS/R/c10 - school time.mp4
+2. Wait: 25 minutes
+3. Play: /home/tme520/Videos/LPS/R/c10 - school 1.mp4
+
+
+>> ACT_DAILY_PRAYER_WEEKDAY
+
+1. Play (random): /home/tme520/Videos/LPS/R/c10 - prayer 1.mp4 ... /home/tme520/Videos/LPS/R/c10 - prayer 5.mp4
+
+
+>> ACT_GOTO_HOME_WEEKDAY
+
+1. Toast message: "Cathy is leaving school"
+2. Wait: 25 minutes
+3. Play: /home/tme520/Videos/LPS/R/c10 - coming home.mp4
+
+
+>> ACT_SHOWER_WEEKDAY
+
+1. /home/tme520/Videos/LPS/R/c10 - shower time.mp4
+
+
+>> ACT_BEDTIME_WEEKDAY
+
+1. /home/tme520/Videos/LPS/R/c10 - tired 1.mp4 ... c10 - tired 2.mp4
+2. /home/tme520/Videos/LPS/R/c10 - yawning.mp4
+3. /home/tme520/Videos/LPS/S/c10 - pyjamas.mp4
+4. Toast message: "Cathy is sleeping"
+
+
+>> ACT_ACTIVITY_SINGING_LESSON_WEEKDAY
+
+1. Play: /home/tme520/Videos/LPS/R/c10 - time to sing.mp4
+2. Play: /home/tme520/Videos/LPS/D/c10 - door 1.mp4
+
+
+>> ACT_ACTIVITY_BALLET_LESSON_WEEKDAY
+
+1. Play: /home/tme520/Videos/LPS/R/c10 - ballet lesson time.mp4
+2. Play: /home/tme520/Videos/LPS/D/c10 - door 1.mp4
+
+
+>> ACT_ACTIVITY_PIANO_LESSON_WEEKDAY
+
+1. Play: /home/tme520/Videos/LPS/R/c10 - piano time.mp4
+2. Play: /home/tme520/Videos/LPS/D/c10 - door 1.mp4
+3. Play: /home/tme520/Videos/LPS/R/c10 - piano 1.mp4
+
+
+>> ACT_ACTIVITY_MANDARIN_LESSON_WEEKDAY
+
+1. Play: /home/tme520/Videos/LPS/R/c10 - study mandarin.mp4
+2. Play: /home/tme520/Videos/LPS/D/c10 - door 1.mp4
+
+
+>> ACT_ACTIVITY_SWIMMING_LESSON_WEEKDAY
+
+1. Play: /home/tme520/Videos/LPS/R/c10 - time to swim.mp4
+2. Play: /home/tme520/Videos/LPS/D/c10 - door 1.mp4
+3. Play: /home/tme520/Videos/LPS/R/c10 - swimming pool.mp4
+4. Play (random): /home/tme520/Videos/LPS/S/c10 - swimsuit 1.mp4 ... /home/tme520/Videos/LPS/S/c10 - swimsuit 2.mp4
+
+
+>> ACT_ACTIVITY_TENNIS_LESSON_WEEKEND
+
+1. Play: /home/tme520/Videos/LPS/R/c10 - tennis time.mp4
+2. Play: /home/tme520/Videos/LPS/D/c10 - door 1.mp4
+3. Play: /home/tme520/Videos/LPS/R/c10 - tennis.mp4
+
+
+>> ACT_ACTIVITY_SUNDAY_MASS_WEEKEND
+
+1. Play: /home/tme520/Videos/LPS/R/c10 - church time.mp4
+2. Play: /home/tme520/Videos/LPS/D/c10 - door 1.mp4
+3. Play: /home/tme520/Videos/LPS/R/c10 - church 1.mp4
+4. Play (random): /home/tme520/Videos/LPS/R/c10 - prayer 1.mp4 ... /home/tme520/Videos/LPS/R/c10 - prayer 5.mp4
+
+
+>> ACT_SHOWER_WEEKEND
+
+1. Play: /home/tme520/Videos/LPS/R/c10 - shower time.mp4
+
+
+>> ACT_BEDTIME_WEEKEND
+
+1. Play (random): /home/tme520/Videos/LPS/R/c10 - tired 1.mp4 ... /home/tme520/Videos/LPS/R/c10 - tired 2.mp4
+
+
+2. Play: /home/tme520/Videos/LPS/R/c10 - yawning.mp4
+3. Play: /home/tme520/Videos/LPS/S/c10 - pyjamas.mp4
+4. Toast message: "Cathy is sleeping"
+
+
+>> ACT_EAT_BREAKFAST_WEEKDAY
+
+1. Play: /home/tme520/Videos/LPS/R/c10 - eating apple.mp4
+
+
+>> ACT_EAT_LUNCH_WEEKDAY
+
+1. Play: /home/tme520/Videos/LPS/R/c10 - lunchtime.mp4
+2. Play: /home/tme520/Videos/LPS/R/c10 - eating apple.mp4
+3. Play: /home/tme520/Videos/LPS/R/c10 - drinking water.mp4
+
+
+>> ACT_EAT_DINNER_WEEKDAY
+
+1. Play: /home/tme520/Videos/LPS/R/c10 - hungry.mp4
+2. Play: /home/tme520/Videos/LPS/R/c10 - eating apple.mp4
+3. Play: /home/tme520/Videos/LPS/R/c10 - drinking water.mp4
+
+
+>> ACT_TEST_TIME_WEEKDAY
+
+1. Play: /home/tme520/Videos/LPS/S/c10 - pyjamas.mp4
+2. Toast message: "This is a test (1)"
+3. Play (random): /home/tme520/Videos/LPS/S/c10 - karate 1.mp4 ... /home/tme520/Videos/LPS/S/c10 - karate 7.mp4
+4. Wait: 1 minute
+5. Play: /home/tme520/Videos/LPS/S/c10 - beach.mp4
+6. Toast message: Thsi is a test (2)"
+
+
