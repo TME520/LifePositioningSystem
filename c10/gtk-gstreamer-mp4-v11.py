@@ -67,20 +67,26 @@ def load_schedule() -> Tuple[List[ScheduleEntry], Dict[int, List[ScheduleEntry]]
     try:
         with open(schedule_path, newline="", encoding="utf-8") as f:
             reader = _csv.reader(f, delimiter=";")
-            # Skip header
+            # Read header so we can locate HH/MM columns explicitly
             try:
-                next(reader)
+                header = next(reader)
             except StopIteration:
                 return entries, by_wd
+
+            header_lookup = {col.strip().upper(): idx for idx, col in enumerate(header)}
+            # Default back to legacy positional indices if HH/MM missing
+            hh_idx = header_lookup.get("HH", 7)
+            mm_idx = header_lookup.get("MM", 8)
 
             for row_num, row in enumerate(reader, start=2):
                 if not row or all((c.strip() == "" for c in row)):
                     continue
-                row = (row + [""] * 14)[:14]
+                max_len = max(14, hh_idx + 1, mm_idx + 1)
+                row = (row + [""] * max_len)[:max_len]
                 try:
                     m, tu, w, th, fr, sa, su = [int((v or "0").strip() or "0") for v in row[:7]]
-                    hour = int((row[7] or "0").strip() or "0")
-                    minute = int((row[8] or "0").strip() or "0")
+                    hour = int((row[hh_idx] if hh_idx < len(row) else "0").strip() or "0")
+                    minute = int((row[mm_idx] if mm_idx < len(row) else "0").strip() or "0")
                     rnd = int((row[9] or "0").strip() or "0")
                     dur = int((row[10] or "0").strip() or "0")
                     text = (row[11] or "").strip()
