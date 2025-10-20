@@ -651,9 +651,10 @@ class FullscreenPlayer(Gtk.Window):
             offset_min = self._today_offsets.get(idx, 0)
             fire_dt = now.replace(hour=e.hour, minute=e.minute, second=0, microsecond=0) + timedelta(minutes=offset_min)
             # If schedule time already passed before we started the app today, still run it when we catch up
-            print(f"[DEBUG] now: {now} ({now.strftime('%Y-%m-%d %H:%M:%S')})")
+            now_no_ms = now.replace(microsecond=0)
+            print(f"[DEBUG] now: {now_no_ms} ({now_no_ms.strftime('%Y-%m-%d %H:%M:%S')})")
             print(f"[DEBUG] fire_dt: {fire_dt}")
-            if now >= fire_dt:
+            if now_no_ms >= fire_dt:
                 self._today_fired[idx] = True
                 if e.text:
                     self.show_toast(e.text)
