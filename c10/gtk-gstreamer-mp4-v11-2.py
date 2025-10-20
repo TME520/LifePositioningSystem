@@ -399,6 +399,11 @@ class FullscreenPlayer(Gtk.Window):
         return False
 
     def play_file(self, path: str):
+        # White background
+        try:
+            self.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1,1,1,1))
+        except Exception:
+            pass
         if not path or not os.path.exists(path):
             print(f"[ERROR] File not found: {path}")
             # If this was supposed to start immediately, try next queued item
@@ -416,9 +421,7 @@ class FullscreenPlayer(Gtk.Window):
     def try_play_next_in_queue(self):
         if self.play_queue:
             next_path = self.play_queue.pop(0)
-            self.schedule_box.hide()
             self.play_file(next_path)
-            self.schedule_box.show_all()
         else:
             self._playing = False
             self.stop_to_clock()
