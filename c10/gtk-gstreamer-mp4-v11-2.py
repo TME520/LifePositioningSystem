@@ -267,6 +267,17 @@ class FullscreenPlayer(Gtk.Window):
         }
         .schedule-panel { background-color: rgba(0,0,0,0.45); border-radius: 10px; padding: 8px; }
         """
+
+        # Set white background
+        css = b"window { background-color: white; }"
+        provider = Gtk.CssProvider()
+        provider.load_from_data(css)
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
         provider = Gtk.CssProvider(); provider.load_from_data(css)
         screen = Gdk.Screen.get_default()
         Gtk.StyleContext.add_provider_for_screen(
