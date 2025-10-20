@@ -244,7 +244,7 @@ class FullscreenPlayer(Gtk.Window):
         self.toast_label = Gtk.Label()
         self.toast_label.set_name("toast-label")
         self.toast_label.set_halign(Gtk.Align.CENTER)
-        self.toast_label.set_valign(Gtk.Align.END)
+        self.toast_label.set_valign(Gtk.Align.CENTER)
         self.toast_label.set_margin_bottom(40)
         self.overlay.add_overlay(self.toast_label)
         try:
@@ -279,9 +279,9 @@ class FullscreenPlayer(Gtk.Window):
         self.highlight_next_upcoming()
         GLib.timeout_add_seconds(60, self._periodic_highlight)
 
-        # White background
+        # Black background
         try:
-            self.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1,1,1,1))
+            self.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(0,0,0,1))
         except Exception:
             pass
 
