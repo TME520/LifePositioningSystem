@@ -640,6 +640,7 @@ class FullscreenPlayer(Gtk.Window):
     def _check_and_fire_scheduled(self, now: datetime):
         wd = now.weekday()
         for idx, e in enumerate(self.schedule):
+            print(f"[DEBUG] Parsing event {e} for {idx}")
             # Check weekday flag for *today*
             flags = [e.monday, e.tuesday, e.wednesday, e.thursday, e.friday, e.saturday, e.sunday]
             if not flags[wd]:
@@ -653,6 +654,7 @@ class FullscreenPlayer(Gtk.Window):
             now_no_ms = now.replace(microsecond=0)
             # print(f"[DEBUG] now: {now_no_ms} ({now_no_ms.strftime('%Y-%m-%d %H:%M:%S')})")
             # print(f"[DEBUG] fire_dt: {fire_dt}")
+            
             if now_no_ms >= fire_dt:
                 print(f"[DEBUG] {now_no_ms} >= {fire_dt}")
                 self._today_fired[idx] = True
