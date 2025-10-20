@@ -279,9 +279,9 @@ class FullscreenPlayer(Gtk.Window):
         self.highlight_next_upcoming()
         GLib.timeout_add_seconds(60, self._periodic_highlight)
 
-        # Black background
+        # White background
         try:
-            self.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(0,0,0,1))
+            self.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1,1,1,1))
         except Exception:
             pass
 
