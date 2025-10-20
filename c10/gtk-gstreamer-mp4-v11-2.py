@@ -518,7 +518,7 @@ class FullscreenPlayer(Gtk.Window):
         self.schedule_store = Gtk.ListStore(str, str, str, str, str, str)
         self.schedule_view = Gtk.TreeView(model=self.schedule_store)
         self.schedule_view.set_headers_visible(True)
-        self.schedule_view.set_enable_search(True)
+        self.schedule_view.set_enable_search(False)
 
         def add_col(title, col_id, align=0.0, width=None):
             renderer = Gtk.CellRendererText()
@@ -579,7 +579,7 @@ class FullscreenPlayer(Gtk.Window):
             print(f"[INFO] Added {days} | {time_str} | {rand_str} | {dur_str} | {text} | {action} to the schedule")
 
     def find_next_event_index(self):
-        print("[DEBUG] Looking for next event")
+        # print("[DEBUG] Looking for next event")
         if not self.schedule:
             return (None, None)
         now = datetime.now()
@@ -596,12 +596,13 @@ class FullscreenPlayer(Gtk.Window):
                 target_date = (now + timedelta(days=day_offset)).date()
                 cand_dt = datetime(target_date.year, target_date.month, target_date.day, e.hour, e.minute)
                 if cand_dt >= now:
-                    print(f"[INFO] Found: {cand_dt} {idx}")
+                    # print(f"[INFO] Found: {cand_dt} {idx}")
                     candidates.append((cand_dt, idx))
         if not candidates:
             print("[DEBUG] None found")
             return (None, None)
         cand_dt, idx = min(candidates, key=lambda t: t[0])
+        print(f"[INFO] Next event: {cand_dt} ({idx})")
         return (idx, cand_dt)
 
     def highlight_next_upcoming(self):
