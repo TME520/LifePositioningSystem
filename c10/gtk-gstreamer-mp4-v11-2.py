@@ -159,7 +159,7 @@ class FullscreenPlayer(Gtk.Window):
 
         # Load schedule + actions at startup
         self.schedule, self.schedule_by_weekday = load_schedule()
-        print(f"[DEBUG] schedule: {schedule}")
+        print(f"[DEBUG] schedule: {self.schedule}")
         self.actions_script = load_actions_script()
 
         # Day roll state (for random offsets + fired flags)
