@@ -578,7 +578,7 @@ class FullscreenPlayer(Gtk.Window):
         print("[DEBUG] Looking for next event")
         if not self.schedule:
             return (None, None)
-        now = datetime.now()
+        now = datetime.now(timespec='seconds')
         today_idx = now.weekday()  # Monday=0
         print(f"[DEBUG] now: {now}")
         print(f"[DEBUG] today_idx: {today_idx}")
