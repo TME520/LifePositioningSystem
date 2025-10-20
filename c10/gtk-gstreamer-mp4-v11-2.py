@@ -244,7 +244,7 @@ class FullscreenPlayer(Gtk.Window):
         self.toast_label = Gtk.Label()
         self.toast_label.set_name("toast-label")
         self.toast_label.set_halign(Gtk.Align.CENTER)
-        self.toast_label.set_valign(Gtk.Align.CENTER)
+        self.toast_label.set_valign(Gtk.Align.END)
         self.toast_label.set_margin_bottom(40)
         self.overlay.add_overlay(self.toast_label)
         try:
@@ -266,17 +266,8 @@ class FullscreenPlayer(Gtk.Window):
             border-radius: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.8);
         }
         .schedule-panel { background-color: rgba(0,0,0,0.45); border-radius: 10px; padding: 8px; }
+        window { background-color: white; }
         """
-
-        # Set white background
-        css = b"window { background-color: white; }"
-        provider = Gtk.CssProvider()
-        provider.load_from_data(css)
-        Gtk.StyleContext.add_provider_for_screen(
-            Gdk.Screen.get_default(),
-            provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
 
         provider = Gtk.CssProvider(); provider.load_from_data(css)
         screen = Gdk.Screen.get_default()
