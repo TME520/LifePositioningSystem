@@ -416,7 +416,9 @@ class FullscreenPlayer(Gtk.Window):
     def try_play_next_in_queue(self):
         if self.play_queue:
             next_path = self.play_queue.pop(0)
+            self.schedule_box.hide()
             self.play_file(next_path)
+            self.schedule_box.show_all()
         else:
             self._playing = False
             self.stop_to_clock()
@@ -478,14 +480,14 @@ class FullscreenPlayer(Gtk.Window):
             self.enqueue_hour_video(now.hour)
 
         # Check scheduled actions
-        print("[DEBUG] Check scheduled actions (tick)")
+        # print("[DEBUG] Check scheduled actions (tick)")
         self._check_and_fire_scheduled(now)
         return True
 
     def update_clock(self):
         now = datetime.now()
         text = now.strftime("%A  %H:%M")
-        print(f"[DEBUG] Updating clock: {text}")
+        # print(f"[DEBUG] Updating clock: {text}")
         self.clock_label.set_text(text)
 
     # -------------------------- Startup sequence --------------------------
@@ -584,8 +586,8 @@ class FullscreenPlayer(Gtk.Window):
             return (None, None)
         now = datetime.now()
         today_idx = now.weekday()  # Monday=0
-        print(f"[DEBUG] now: {now}")
-        print(f"[DEBUG] today_idx: {today_idx}")
+        # print(f"[DEBUG] now: {now}")
+        # print(f"[DEBUG] today_idx: {today_idx}")
         candidates = []
         for day_offset in range(0, 7):
             day_idx = (today_idx + day_offset) % 7
@@ -649,8 +651,8 @@ class FullscreenPlayer(Gtk.Window):
             offset_min = self._today_offsets.get(idx, 0)
             fire_dt = now.replace(hour=e.hour, minute=e.minute, second=0, microsecond=0) + timedelta(minutes=offset_min)
             # If schedule time already passed before we started the app today, still run it when we catch up
-            # print(f"[DEBUG] now: {now} ({now.strftime('%Y-%m-%d %H:%M:%S')})")
-            # print(f"[DEBUG] fire_dt: {fire_dt}")
+            print(f"[DEBUG] now: {now} ({now.strftime('%Y-%m-%d %H:%M:%S')})")
+            print(f"[DEBUG] fire_dt: {fire_dt}")
             if now >= fire_dt:
                 self._today_fired[idx] = True
                 if e.text:
