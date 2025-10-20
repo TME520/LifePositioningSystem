@@ -399,11 +399,6 @@ class FullscreenPlayer(Gtk.Window):
         return False
 
     def play_file(self, path: str):
-        # White background
-        try:
-            self.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1,1,1,1))
-        except Exception:
-            pass
         if not path or not os.path.exists(path):
             print(f"[ERROR] File not found: {path}")
             # If this was supposed to start immediately, try next queued item
