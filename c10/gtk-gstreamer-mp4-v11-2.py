@@ -655,7 +655,7 @@ class FullscreenPlayer(Gtk.Window):
             # print(f"[DEBUG] now: {now_no_ms} ({now_no_ms.strftime('%Y-%m-%d %H:%M:%S')})")
             # print(f"[DEBUG] fire_dt: {fire_dt}")
             
-            if now_no_ms >= fire_dt:
+            if now_no_ms == fire_dt:
                 print(f"[DEBUG] {now_no_ms} >= {fire_dt}")
                 self._today_fired[idx] = True
                 if e.text:
