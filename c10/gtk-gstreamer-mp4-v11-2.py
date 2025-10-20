@@ -651,7 +651,7 @@ class FullscreenPlayer(Gtk.Window):
             # If schedule time already passed before we started the app today, still run it when we catch up
             # print(f"[DEBUG] now: {now} ({now.strftime('%Y-%m-%d %H:%M:%S')})")
             # print(f"[DEBUG] fire_dt: {fire_dt}")
-            if now.strftime('%Y-%m-%d %H:%M:%S') >= fire_dt:
+            if now >= fire_dt:
                 self._today_fired[idx] = True
                 if e.text:
                     self.show_toast(e.text)
