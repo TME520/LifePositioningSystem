@@ -228,6 +228,8 @@ class FullscreenPlayer(Gtk.Window):
             self.using_overlay = True
             self.da.connect("realize", self.on_da_realize)
 
+        self._set_video_overlay_background("black")
+
         # Clock label
         self.clock_label = Gtk.Label()
         self.clock_label.set_name("clock-label")
@@ -412,6 +414,61 @@ class FullscreenPlayer(Gtk.Window):
                 ctx.remove_class("window-playing")
                 ctx.add_class("window-idle")
 
+    def _set_video_overlay_background(self, color_spec: str):
+        """Attempt to update the background color used by the video sink when letterboxed."""
+        try:
+            sink = self.pipe.get_property("video-sink")
+        except Exception:
+            sink = None
+        if not sink:
+            return
+
+        rgba = self._parse_rgba(color_spec)
+        color_int = 0xFF000000
+        if color_spec.lower() == "white":
+            color_int = 0xFFFFFFFF
+        elif color_spec.lower() == "black":
+            color_int = 0xFF000000
+
+        def apply_color(element) -> bool:
+            if element is None:
+                return False
+            try:
+                if hasattr(element, "set_background_color"):
+                    element.set_background_color(color_int)
+                    return True
+            except Exception:
+                pass
+            try:
+                if hasattr(element, "find_property") and element.find_property("background-color"):
+                    try:
+                        element.set_property("background-color", rgba)
+                    except TypeError:
+                        element.set_property("background-color", color_int)
+                    return True
+            except Exception:
+                pass
+            return False
+
+        elements_to_try = [sink]
+        if isinstance(sink, Gst.Bin):
+            try:
+                itr = sink.iterate_recurse()
+                while True:
+                    res, element = itr.next()
+                    if res == Gst.IteratorResult.OK:
+                        elements_to_try.append(element)
+                    elif res == Gst.IteratorResult.RESYNC:
+                        itr = sink.iterate_recurse()
+                    else:
+                        break
+            except Exception:
+                pass
+
+        for element in elements_to_try:
+            if apply_color(element):
+                break
+
     def _parse_rgba(self, color_spec: str) -> Gdk.RGBA:
         rgba = Gdk.RGBA()
         if not rgba.parse(color_spec):
@@ -423,12 +480,14 @@ class FullscreenPlayer(Gtk.Window):
     def _on_playback_started(self):
         self._update_background_state(True)
         self._set_window_background_color(self._white_rgba)
+        self._set_video_overlay_background("white")
         if hasattr(self, "schedule_box"):
             self.schedule_box.hide()
 
     def _on_playback_stopped(self):
         self._update_background_state(False)
         self._set_window_background_color(self._black_rgba)
+        self._set_video_overlay_background("black")
         if hasattr(self, "schedule_box"):
             if getattr(self, "schedule_visible", True):
                 self.schedule_box.show_all()
