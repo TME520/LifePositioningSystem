@@ -257,21 +257,46 @@ class FullscreenPlayer(Gtk.Window):
         self.toast_hide_source = None
 
         # CSS styling
-        css = b"""
-        #clock-label {
-            font-size: 28pt; font-weight: 700; color: white;
-            padding: 10px 14px; background-color: rgba(0,0,0,0.35);
-            border-radius: 10px; text-shadow: 0 1px 2px rgba(0,0,0,0.7);
-        }
-        #toast-label {
-            font-size: 16pt; font-weight: 600; color: white;
-            padding: 8px 12px; background-color: rgba(0,0,0,0.55);
-            border-radius: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.8);
-        }
-        .schedule-panel { background-color: rgba(0,0,0,0.45); border-radius: 10px; padding: 8px; }
-        GtkWindow.window-idle, GtkOverlay.window-idle { background-color: black; }
-        GtkWindow.window-playing, GtkOverlay.window-playing { background-color: white; }
-        """
+        bg_path = os.path.join(os.path.dirname(__file__), "hk_bg_01.png")
+        bg_uri = None
+        if os.path.exists(bg_path):
+            try:
+                bg_uri = GLib.filename_to_uri(bg_path, None)
+            except Exception as ex:
+                print(f"[WARN] Failed to create URI for background image: {ex}")
+        else:
+            print(f"[WARN] Background image not found at {bg_path}")
+
+        css_parts = [
+            "#clock-label {",
+            "    font-size: 28pt; font-weight: 700; color: white;",
+            "    padding: 10px 14px; background-color: rgba(0,0,0,0.35);",
+            "    border-radius: 10px; text-shadow: 0 1px 2px rgba(0,0,0,0.7);",
+            "}",
+            "#toast-label {",
+            "    font-size: 16pt; font-weight: 600; color: white;",
+            "    padding: 8px 12px; background-color: rgba(0,0,0,0.55);",
+            "    border-radius: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.8);",
+            "}",
+            ".schedule-panel { background-color: rgba(0,0,0,0.45); border-radius: 10px; padding: 8px; }",
+            "GtkWindow.window-idle, GtkOverlay.window-idle { background-color: black; }",
+            "GtkWindow.window-playing, GtkOverlay.window-playing { background-color: white; }",
+        ]
+
+        if bg_uri:
+            css_parts.append(
+                "GtkWindow, GtkOverlay, GtkWindow.window-idle, GtkOverlay.window-idle, "
+                "GtkWindow.window-playing, GtkOverlay.window-playing {"
+            )
+            css_parts.extend([
+                f"    background-image: url('{bg_uri}');",
+                "    background-size: cover;",
+                "    background-position: center;",
+                "    background-repeat: no-repeat;",
+                "}",
+            ])
+
+        css = "\n".join(css_parts).encode("utf-8")
 
         provider = Gtk.CssProvider(); provider.load_from_data(css)
         screen = Gdk.Screen.get_default()
@@ -354,13 +379,7 @@ class FullscreenPlayer(Gtk.Window):
 
     def _set_window_background_color(self, rgba):
         """Apply the requested background colour to the window and key child widgets."""
-        targets = [self]
-        if hasattr(self, "overlay") and self.overlay is not None:
-            targets.append(self.overlay)
-        if hasattr(self, "GtkOverlay.window-idle") and self.overlay is not None:
-            targets.append(self.overlay)
-        if hasattr(self, "GtkOverlay.window-playing") and self.overlay is not None:
-            targets.append(self.overlay)
+        targets = []
         if hasattr(self, "video_widget") and self.video_widget is not None:
             targets.append(self.video_widget)
         if hasattr(self, "da") and self.da is not None:
