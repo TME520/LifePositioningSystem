@@ -303,6 +303,7 @@ class FullscreenPlayer(Gtk.Window):
         bus.add_signal_watch()
         bus.connect("message::eos", self.on_eos)
         bus.connect("message::error", self.on_error)
+        bus.connect("message::state-changed", self.on_state_changed)
 
         # Key bindings
         self.connect("key-press-event", self.on_key)
@@ -458,6 +459,19 @@ class FullscreenPlayer(Gtk.Window):
         print(f"[ERROR][GStreamer] Error: {err}; debug: {debug}")
         self._playing = False
         self.try_play_next_in_queue()
+
+    def on_state_changed(self, _bus, msg):
+        if msg.src != self.pipe:
+            return
+        try:
+            _old, new_state, _pending = msg.parse_state_changed()
+        except Exception:
+            return
+        if new_state == Gst.State.PLAYING:
+            self._set_window_background_color(self._white_rgba)
+        elif new_state in (Gst.State.NULL, Gst.State.READY, Gst.State.PAUSED):
+            if not self._playing and not self.play_queue:
+                self._set_window_background_color(self._black_rgba)
 
     # -------------------------- Keyboard --------------------------
 
