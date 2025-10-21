@@ -266,7 +266,8 @@ class FullscreenPlayer(Gtk.Window):
             border-radius: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.8);
         }
         .schedule-panel { background-color: rgba(0,0,0,0.45); border-radius: 10px; padding: 8px; }
-        window { background-color: white; }
+        .window-idle { background-color: black; }
+        .window-playing { background-color: white; }
         """
 
         provider = Gtk.CssProvider(); provider.load_from_data(css)
@@ -274,6 +275,7 @@ class FullscreenPlayer(Gtk.Window):
         Gtk.StyleContext.add_provider_for_screen(
             screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
+        self.get_style_context().add_class("window-idle")
 
         # Schedule view (for visibility / debugging)
         self.build_schedule_view()
@@ -352,6 +354,15 @@ class FullscreenPlayer(Gtk.Window):
         except Exception:
             pass
 
+    def _update_background_state(self, playing: bool):
+        ctx = self.get_style_context()
+        if playing:
+            ctx.remove_class("window-idle")
+            ctx.add_class("window-playing")
+        else:
+            ctx.remove_class("window-playing")
+            ctx.add_class("window-idle")
+
     def _parse_rgba(self, color_spec: str) -> Gdk.RGBA:
         rgba = Gdk.RGBA()
         if not rgba.parse(color_spec):
@@ -361,11 +372,13 @@ class FullscreenPlayer(Gtk.Window):
         return rgba
 
     def _on_playback_started(self):
+        self._update_background_state(True)
         self._set_window_background_color(self._white_rgba)
         if hasattr(self, "schedule_box"):
             self.schedule_box.hide()
 
     def _on_playback_stopped(self):
+        self._update_background_state(False)
         self._set_window_background_color(self._black_rgba)
         if hasattr(self, "schedule_box"):
             if getattr(self, "schedule_visible", True):
@@ -476,9 +489,11 @@ class FullscreenPlayer(Gtk.Window):
         except Exception:
             return
         if new_state == Gst.State.PLAYING:
+            self._update_background_state(True)
             self._set_window_background_color(self._white_rgba)
         elif new_state in (Gst.State.NULL, Gst.State.READY, Gst.State.PAUSED):
             if not self._playing and not self.play_queue:
+                self._update_background_state(False)
                 self._set_window_background_color(self._black_rgba)
 
     # -------------------------- Keyboard --------------------------
