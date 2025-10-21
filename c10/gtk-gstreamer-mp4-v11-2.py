@@ -349,10 +349,15 @@ class FullscreenPlayer(Gtk.Window):
         self.toast_hide_source = GLib.timeout_add_seconds(seconds, _hide)
 
     def _set_window_background_color(self, rgba):
-        try:
-            self.override_background_color(Gtk.StateFlags.NORMAL, rgba)
-        except Exception:
-            pass
+        """Apply the requested background colour to the window and key child widgets."""
+        targets = [self]
+        if hasattr(self, "overlay") and self.overlay is not None:
+            targets.append(self.overlay)
+        for widget in targets:
+            try:
+                widget.override_background_color(Gtk.StateFlags.NORMAL, rgba)
+            except Exception:
+                continue
 
     def _update_background_state(self, playing: bool):
         ctx = self.get_style_context()
