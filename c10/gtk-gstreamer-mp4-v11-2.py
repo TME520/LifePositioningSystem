@@ -154,6 +154,9 @@ def path_for_hour(hour: int) -> str:
 
 class FullscreenPlayer(Gtk.Window):
     def __init__(self):
+        print("")
+        print("---====== *** ======---")
+        print("[INFO] Should be the 1st message we see")
         super().__init__(title="LPS - C10")
         self.connect("destroy", self.on_destroy)
 
@@ -354,6 +357,10 @@ class FullscreenPlayer(Gtk.Window):
         targets = [self]
         if hasattr(self, "overlay") and self.overlay is not None:
             targets.append(self.overlay)
+        if hasattr(self, "GtkOverlay.window-idle") and self.overlay is not None:
+            targets.append(self.overlay)
+        if hasattr(self, "GtkOverlay.window-playing") and self.overlay is not None:
+            targets.append(self.overlay)
         if hasattr(self, "video_widget") and self.video_widget is not None:
             targets.append(self.video_widget)
         if hasattr(self, "da") and self.da is not None:
@@ -368,6 +375,10 @@ class FullscreenPlayer(Gtk.Window):
         widgets = [self]
         if hasattr(self, "overlay") and self.overlay is not None:
             widgets.append(self.overlay)
+        if hasattr(self, "GtkOverlay.window-idle") and self.overlay is not None:
+            targets.append(self.overlay)
+        if hasattr(self, "GtkOverlay.window-playing") and self.overlay is not None:
+            targets.append(self.overlay)
         if hasattr(self, "video_widget") and self.video_widget is not None:
             widgets.append(self.video_widget)
         if hasattr(self, "da") and self.da is not None:
