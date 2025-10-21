@@ -228,7 +228,7 @@ class FullscreenPlayer(Gtk.Window):
             self.using_overlay = True
             self.da.connect("realize", self.on_da_realize)
 
-        self._set_video_overlay_background("white")
+        self._set_video_overlay_background("black")
 
         # Clock label
         self.clock_label = Gtk.Label()
@@ -487,7 +487,7 @@ class FullscreenPlayer(Gtk.Window):
     def _on_playback_stopped(self):
         self._update_background_state(False)
         self._set_window_background_color(self._black_rgba)
-        self._set_video_overlay_background("white")
+        self._set_video_overlay_background("black")
         if hasattr(self, "schedule_box"):
             if getattr(self, "schedule_visible", True):
                 self.schedule_box.show_all()
