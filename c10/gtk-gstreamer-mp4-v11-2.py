@@ -282,8 +282,8 @@ class FullscreenPlayer(Gtk.Window):
         GLib.timeout_add_seconds(60, self._periodic_highlight)
 
         # Background colours used when idle vs playing
-        self._black_rgba = Gdk.RGBA(0.0, 0.0, 0.0, 1.0)
-        self._white_rgba = Gdk.RGBA(1.0, 1.0, 1.0, 1.0)
+        self._black_rgba = self._parse_rgba("black")
+        self._white_rgba = self._parse_rgba("white")
         self._set_window_background_color(self._black_rgba)
 
         # Hour-change playback state
@@ -351,6 +351,14 @@ class FullscreenPlayer(Gtk.Window):
             self.override_background_color(Gtk.StateFlags.NORMAL, rgba)
         except Exception:
             pass
+
+    def _parse_rgba(self, color_spec: str) -> Gdk.RGBA:
+        rgba = Gdk.RGBA()
+        if not rgba.parse(color_spec):
+            # Fall back to opaque black if parsing fails
+            rgba.red = rgba.green = rgba.blue = 0.0
+            rgba.alpha = 1.0
+        return rgba
 
     def _on_playback_started(self):
         self._set_window_background_color(self._white_rgba)
