@@ -266,8 +266,8 @@ class FullscreenPlayer(Gtk.Window):
             border-radius: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.8);
         }
         .schedule-panel { background-color: rgba(0,0,0,0.45); border-radius: 10px; padding: 8px; }
-        .window-idle { background-color: black; }
-        .window-playing { background-color: white; }
+        GtkWindow.window-idle, GtkOverlay.window-idle { background-color: black; }
+        GtkWindow.window-playing, GtkOverlay.window-playing { background-color: white; }
         """
 
         provider = Gtk.CssProvider(); provider.load_from_data(css)
@@ -276,6 +276,7 @@ class FullscreenPlayer(Gtk.Window):
             screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
         self.get_style_context().add_class("window-idle")
+        self.overlay.get_style_context().add_class("window-idle")
 
         # Schedule view (for visibility / debugging)
         self.build_schedule_view()
@@ -360,13 +361,18 @@ class FullscreenPlayer(Gtk.Window):
                 continue
 
     def _update_background_state(self, playing: bool):
-        ctx = self.get_style_context()
-        if playing:
-            ctx.remove_class("window-idle")
-            ctx.add_class("window-playing")
-        else:
-            ctx.remove_class("window-playing")
-            ctx.add_class("window-idle")
+        widgets = [self]
+        if hasattr(self, "overlay") and self.overlay is not None:
+            widgets.append(self.overlay)
+
+        for widget in widgets:
+            ctx = widget.get_style_context()
+            if playing:
+                ctx.remove_class("window-idle")
+                ctx.add_class("window-playing")
+            else:
+                ctx.remove_class("window-playing")
+                ctx.add_class("window-idle")
 
     def _parse_rgba(self, color_spec: str) -> Gdk.RGBA:
         rgba = Gdk.RGBA()
