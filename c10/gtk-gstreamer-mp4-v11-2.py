@@ -354,6 +354,10 @@ class FullscreenPlayer(Gtk.Window):
         targets = [self]
         if hasattr(self, "overlay") and self.overlay is not None:
             targets.append(self.overlay)
+        if hasattr(self, "video_widget") and self.video_widget is not None:
+            targets.append(self.video_widget)
+        if hasattr(self, "da") and self.da is not None:
+            targets.append(self.da)
         for widget in targets:
             try:
                 widget.override_background_color(Gtk.StateFlags.NORMAL, rgba)
@@ -364,6 +368,10 @@ class FullscreenPlayer(Gtk.Window):
         widgets = [self]
         if hasattr(self, "overlay") and self.overlay is not None:
             widgets.append(self.overlay)
+        if hasattr(self, "video_widget") and self.video_widget is not None:
+            widgets.append(self.video_widget)
+        if hasattr(self, "da") and self.da is not None:
+            widgets.append(self.da)
 
         for widget in widgets:
             ctx = widget.get_style_context()
