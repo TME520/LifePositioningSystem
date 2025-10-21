@@ -281,11 +281,10 @@ class FullscreenPlayer(Gtk.Window):
         self.highlight_next_upcoming()
         GLib.timeout_add_seconds(60, self._periodic_highlight)
 
-        # Black background
-        try:
-            self.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(0,0,0,1))
-        except Exception:
-            pass
+        # Background colours used when idle vs playing
+        self._black_rgba = Gdk.RGBA(0.0, 0.0, 0.0, 1.0)
+        self._white_rgba = Gdk.RGBA(1.0, 1.0, 1.0, 1.0)
+        self._set_window_background_color(self._black_rgba)
 
         # Hour-change playback state
         now = datetime.now()
@@ -346,6 +345,25 @@ class FullscreenPlayer(Gtk.Window):
             return False
         self.toast_hide_source = GLib.timeout_add_seconds(seconds, _hide)
 
+    def _set_window_background_color(self, rgba):
+        try:
+            self.override_background_color(Gtk.StateFlags.NORMAL, rgba)
+        except Exception:
+            pass
+
+    def _on_playback_started(self):
+        self._set_window_background_color(self._white_rgba)
+        if hasattr(self, "schedule_box"):
+            self.schedule_box.hide()
+
+    def _on_playback_stopped(self):
+        self._set_window_background_color(self._black_rgba)
+        if hasattr(self, "schedule_box"):
+            if getattr(self, "schedule_visible", True):
+                self.schedule_box.show_all()
+            else:
+                self.schedule_box.hide()
+
     # -------------------------- Window / sink hooks --------------------------
 
     def on_window_realize(self, *_):
@@ -405,6 +423,7 @@ class FullscreenPlayer(Gtk.Window):
             self.try_play_next_in_queue()
             return
         print(f"[INFO] Playing {path}")
+        self._on_playback_started()
         self.show_video_layer()
         try: self.pipe.set_state(Gst.State.NULL)
         except Exception: pass
@@ -425,6 +444,7 @@ class FullscreenPlayer(Gtk.Window):
         try: self.pipe.set_state(Gst.State.NULL)
         except Exception: pass
         self.show_clock_only()
+        self._on_playback_stopped()
 
     # -------------------------- GStreamer bus --------------------------
 
@@ -560,7 +580,10 @@ class FullscreenPlayer(Gtk.Window):
     def toggle_schedule_visibility(self):
         self.schedule_visible = not getattr(self, "schedule_visible", True)
         if self.schedule_visible:
-            self.schedule_box.show_all()
+            if not self._playing:
+                self.schedule_box.show_all()
+            else:
+                self.schedule_box.hide()
         else:
             self.schedule_box.hide()
 
