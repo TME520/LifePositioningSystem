@@ -84,5 +84,17 @@
     {"Wait": "1 minute"},
     {"Play": "/home/tme520/Videos/LPS/S/c10 - beach.mp4"},
     {"Toast-Message": "Thsi is a test (2)"}
+  ],
+  "ACT_RND_DANCE_WEEKDAY": [
+    {"Play-Random": "/home/tme520/Videos/LPS/S/c10 - dancing [1..8].mp4"}
+  ],
+  "ACT_RND_KARATE_WEEKEND": [
+    {"Play-Random": "/home/tme520/Videos/LPS/S/c10 - karate [1..7].mp4"}
+  ],
+  "ACT_RND_MAGIC_WEEKDAY": [
+    {"Play-Random": "/home/tme520/Videos/LPS/M/c10 - magic [1..16].mp4"}
+  ],
+  "ACT_RND_MAGIC_WEEKEND": [
+    {"Play-Random": "/home/tme520/Videos/LPS/M/c10 - magic [17..34].mp4"}
   ]
 }
