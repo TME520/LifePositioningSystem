@@ -96,5 +96,17 @@
   ],
   "ACT_RND_MAGIC_WEEKEND": [
     {"Play-Random": "/home/tme520/Videos/LPS/M/c10 - magic [17..34].mp4"}
+  ],
+  "ACT_FUN_TIME_WEEKDAY": [
+    {"Play-Random": "/home/tme520/Videos/LPS/I/c10 - idling [1..6].mp4"},
+    {"Play": "/home/tme520/Videos/LPS/I/c10 - love 1.mp4"},
+    {"Play": "/home/tme520/Videos/LPS/R/c10 - come close 1.mp4"},
+    {"Play-Random": "/home/tme520/Videos/LPS/I/c10 - sitting close [1..3].mp4"}
+  ],
+  "ACT_FUN_TIME_WEEKEND": [
+    {"Play-Random": "/home/tme520/Videos/LPS/I/c10 - standing one leg [1..2].mp4"},
+    {"Play": "/home/tme520/Videos/LPS/I/c10 - love 1.mp4"},
+    {"Play": "/home/tme520/Videos/LPS/I/c10 - zoom closeup.mp4"},
+    {"Play": "/home/tme520/Videos/LPS/I/c10 - sit read.mp4"}
   ]
 }
