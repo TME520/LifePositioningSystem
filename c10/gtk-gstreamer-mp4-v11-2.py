@@ -198,7 +198,8 @@ class FullscreenPlayer(Gtk.Window):
         # GStreamer pipeline
         self.pipe = Gst.ElementFactory.make("playbin", None)
         self.video_filter = Gst.parse_bin_from_description(
-            "videoscale add-borders=false ! videoconvert", True
+            "videoscale add-borders=false ! videoconvert ! alpha alpha=1.0 ! videoconvert",
+            True,
         )
         self.pipe.set_property("video-filter", self.video_filter)
         self.video_widget = None
