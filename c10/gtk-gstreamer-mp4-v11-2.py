@@ -228,7 +228,7 @@ class FullscreenPlayer(Gtk.Window):
             self.using_overlay = True
             self.da.connect("realize", self.on_da_realize)
 
-        self._set_video_overlay_background("black")
+        self._set_video_overlay_background("white")
 
         # Clock label
         self.clock_label = Gtk.Label()
@@ -281,8 +281,8 @@ class FullscreenPlayer(Gtk.Window):
             "    border-radius: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.8);",
             "}",
             ".schedule-panel { background-color: rgba(0,0,0,0.45); border-radius: 10px; padding: 8px; }",
-            "GtkWindow.window-idle, GtkOverlay.window-idle { background-color: black; }",
-            "GtkWindow.window-playing, GtkOverlay.window-playing { background-color: white; }",
+            "GtkWindow { background-color: black; }",
+            "GtkOverlay { background-color: transparent; }",
         ]
 
         if bg_uri:
@@ -379,16 +379,25 @@ class FullscreenPlayer(Gtk.Window):
             return False
         self.toast_hide_source = GLib.timeout_add_seconds(seconds, _hide)
 
-    def _set_window_background_color(self, rgba):
-        """Apply the requested background colour to the window and key child widgets."""
-        targets = []
-        if hasattr(self, "video_widget") and self.video_widget is not None:
-            targets.append(self.video_widget)
-        if hasattr(self, "da") and self.da is not None:
-            targets.append(self.da)
-        for widget in targets:
+    def _set_window_background_color(self, _rgba):
+        """Ensure the window background stays black and the video surface stays white."""
+        # Main window / overlay background -> black
+        try:
+            self.override_background_color(Gtk.StateFlags.NORMAL, self._black_rgba)
+        except Exception:
+            pass
+        if hasattr(self, "overlay") and self.overlay is not None:
             try:
-                widget.override_background_color(Gtk.StateFlags.NORMAL, rgba)
+                self.overlay.override_background_color(Gtk.StateFlags.NORMAL, self._black_rgba)
+            except Exception:
+                pass
+
+        # Video surfaces -> white
+        for widget in (getattr(self, "video_widget", None), getattr(self, "da", None)):
+            if widget is None:
+                continue
+            try:
+                widget.override_background_color(Gtk.StateFlags.NORMAL, self._white_rgba)
             except Exception:
                 continue
 
@@ -487,7 +496,7 @@ class FullscreenPlayer(Gtk.Window):
     def _on_playback_stopped(self):
         self._update_background_state(False)
         self._set_window_background_color(self._black_rgba)
-        self._set_video_overlay_background("black")
+        self._set_video_overlay_background("white")
         if hasattr(self, "schedule_box"):
             if getattr(self, "schedule_visible", True):
                 self.schedule_box.show_all()
