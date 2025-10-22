@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
 gi.require_version('GstVideo', '1.0')
-from gi.repository import Gtk, Gst, Gdk, GLib
+from gi.repository import Gtk, Gst, Gdk, GLib, GstVideo
 
 from dataclasses import dataclass
 from typing import List, Dict, Optional, Tuple
@@ -203,6 +203,14 @@ class FullscreenPlayer(Gtk.Window):
         self.pipe.set_property("video-filter", self.video_filter)
         self.video_widget = None
         self.using_overlay = False
+
+        # Whenever playbin swaps out the video sink (e.g. when auto-plugging
+        # decoders), force our preferred background colour again so we never
+        # flash the default black bars.
+        try:
+            self.pipe.connect("notify::video-sink", self._on_video_sink_changed)
+        except Exception:
+            pass
 
         gtk_sink = Gst.ElementFactory.make("gtksink", None)
         if gtk_sink:
@@ -453,6 +461,12 @@ class FullscreenPlayer(Gtk.Window):
             if element is None:
                 return False
             try:
+                if isinstance(element, GstVideo.VideoOverlay):
+                    element.set_background_color(color_int)
+                    return True
+            except Exception:
+                pass
+            try:
                 if hasattr(element, "set_background_color"):
                     element.set_background_color(color_int)
                     return True
@@ -487,6 +501,10 @@ class FullscreenPlayer(Gtk.Window):
         for element in elements_to_try:
             if apply_color(element):
                 break
+
+    def _on_video_sink_changed(self, *_):
+        # Apply asynchronously to ensure the newly-created sink is ready.
+        GLib.idle_add(self._set_video_overlay_background, "white")
 
     def _parse_rgba(self, color_spec: str) -> Gdk.RGBA:
         rgba = Gdk.RGBA()
