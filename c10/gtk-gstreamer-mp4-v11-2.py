@@ -197,6 +197,10 @@ class FullscreenPlayer(Gtk.Window):
 
         # GStreamer pipeline
         self.pipe = Gst.ElementFactory.make("playbin", None)
+        self.video_filter = Gst.parse_bin_from_description(
+            "videoscale add-borders=false ! videoconvert", True
+        )
+        self.pipe.set_property("video-filter", self.video_filter)
         self.video_widget = None
         self.using_overlay = False
 
@@ -219,11 +223,17 @@ class FullscreenPlayer(Gtk.Window):
             for name in ("waylandsink", "glimagesink", "autovideosink", "ximagesink"):
                 s = Gst.ElementFactory.make(name, None)
                 if s: sink = s; break
-            if sink and sink.find_property("force-aspect-ratio"):
-                sink.set_property("force-aspect-ratio", False)
-            if sink and sink.find_property("fullscreen"):
-                try: sink.set_property("fullscreen", True)
-                except Exception: pass
+            if sink:
+                if sink.find_property("force-aspect-ratio"):
+                    sink.set_property("force-aspect-ratio", False)
+                if sink.find_property("add-borders"):
+                    try:
+                        sink.set_property("add-borders", False)
+                    except Exception:
+                        pass
+                if sink.find_property("fullscreen"):
+                    try: sink.set_property("fullscreen", True)
+                    except Exception: pass
             self.pipe.set_property("video-sink", sink)
             self.using_overlay = True
             self.da.connect("realize", self.on_da_realize)
