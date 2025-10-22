@@ -402,27 +402,33 @@ class FullscreenPlayer(Gtk.Window):
             return False
         self.toast_hide_source = GLib.timeout_add_seconds(seconds, _hide)
 
-    def _set_window_background_color(self, _rgba):
-        """Ensure the window background stays black and the video surface stays white."""
-        # Main window / overlay background -> black
-        try:
-            self.override_background_color(Gtk.StateFlags.NORMAL, self._black_rgba)
-        except Exception:
-            pass
-        if hasattr(self, "overlay") and self.overlay is not None:
+    def _set_window_background_color(self, rgba):
+        """Update the window/overlay background colour while keeping the video surface white."""
+
+        def _apply(widget, target_rgba):
+            if widget is None:
+                return
             try:
-                self.overlay.override_background_color(Gtk.StateFlags.NORMAL, self._black_rgba)
+                for state in (
+                    Gtk.StateFlags.NORMAL,
+                    Gtk.StateFlags.ACTIVE,
+                    Gtk.StateFlags.PRELIGHT,
+                    Gtk.StateFlags.SELECTED,
+                    Gtk.StateFlags.INSENSITIVE,
+                ):
+                    widget.override_background_color(state, target_rgba)
             except Exception:
                 pass
 
-        # Video surfaces -> white
+        # Main window / overlay background -> requested colour
+        _apply(self, rgba)
+        if hasattr(self, "overlay") and self.overlay is not None:
+            _apply(self.overlay, rgba)
+
+        # Video surfaces -> always white so letterboxing matches the video content
+        white = getattr(self, "_white_rgba", None)
         for widget in (getattr(self, "video_widget", None), getattr(self, "da", None)):
-            if widget is None:
-                continue
-            try:
-                widget.override_background_color(Gtk.StateFlags.NORMAL, self._white_rgba)
-            except Exception:
-                continue
+            _apply(widget, white or rgba)
 
     def _update_background_state(self, playing: bool):
         widgets = [self]
