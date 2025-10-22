@@ -221,6 +221,9 @@ class FullscreenPlayer(Gtk.Window):
             self.video_widget.set_hexpand(True)
             self.video_widget.set_vexpand(True)
             self.overlay.add(self.video_widget)
+            # Ensure the widget paints a white background so any letterboxing
+            # performed by the sink blends in with the desired colour.
+            self._update_widget_background(self.video_widget, "white")
         else:
             self.da = Gtk.DrawingArea()
             self.da.set_hexpand(True)
@@ -245,6 +248,7 @@ class FullscreenPlayer(Gtk.Window):
             self.pipe.set_property("video-sink", sink)
             self.using_overlay = True
             self.da.connect("realize", self.on_da_realize)
+            self._update_widget_background(self.da, "white")
 
         self._set_video_overlay_background("white")
 
@@ -448,6 +452,7 @@ class FullscreenPlayer(Gtk.Window):
         except Exception:
             sink = None
         if not sink:
+            self._update_widget_background(self.video_widget or getattr(self, "da", None), color_spec)
             return
 
         rgba = self._parse_rgba(color_spec)
@@ -500,7 +505,40 @@ class FullscreenPlayer(Gtk.Window):
 
         for element in elements_to_try:
             if apply_color(element):
+                self._update_widget_background(self.video_widget or getattr(self, "da", None), color_spec)
                 break
+        else:
+            self._update_widget_background(self.video_widget or getattr(self, "da", None), color_spec)
+
+    def _update_widget_background(self, widget, color_spec: str):
+        if widget is None:
+            return
+        rgba = self._parse_rgba(color_spec)
+        try:
+            for state in (
+                Gtk.StateFlags.NORMAL,
+                Gtk.StateFlags.ACTIVE,
+                Gtk.StateFlags.PRELIGHT,
+                Gtk.StateFlags.SELECTED,
+                Gtk.StateFlags.INSENSITIVE,
+            ):
+                widget.override_background_color(state, rgba)
+        except Exception:
+            pass
+        try:
+            ctx = widget.get_style_context()
+            if ctx:
+                css = f".video-background-fixed {{ background-color: {color_spec}; }}"
+                provider = Gtk.CssProvider()
+                provider.load_from_data(css.encode("utf-8"))
+                ctx.add_class("video-background-fixed")
+                Gtk.StyleContext.add_provider(
+                    ctx,
+                    provider,
+                    Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+                )
+        except Exception:
+            pass
 
     def _on_video_sink_changed(self, *_):
         # Apply asynchronously to ensure the newly-created sink is ready.
