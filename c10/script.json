@@ -108,5 +108,8 @@
     {"Play": "/home/tme520/Videos/LPS/I/c10 - love 1.mp4"},
     {"Play": "/home/tme520/Videos/LPS/I/c10 - zoom closeup.mp4"},
     {"Play": "/home/tme520/Videos/LPS/I/c10 - sit read.mp4"}
+  ],
+  "ACT_REPEAT_TEST_WEEKDAY": [
+    {"Play-Random": "/home/tme520/Videos/LPS/G/c10 - group [1..8].mp4"}
   ]
 }
