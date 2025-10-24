@@ -27,6 +27,8 @@ class ScheduleEntry:
     text: str          # toast at start (optional)
     action: str        # ACT_*
     data: str          # expected "FF"
+    hour_expr: str = ""
+    minute_expr: str = ""
 
 def _resolve_path(candidates: List[str]) -> Optional[str]:
     from pathlib import Path as _P
@@ -55,6 +57,29 @@ def _resolve_scriptjson_path() -> Optional[str]:
         os.path.join(os.getcwd(), "script.json"),
         "/mnt/data/script.json",
     ])
+
+def _parse_time_field(value: str, max_value: int, label: str) -> List[int]:
+    value = (value or "").strip()
+    if not value:
+        return [0]
+    if value == "*":
+        return list(range(0, max_value + 1))
+    if value.startswith("*/"):
+        try:
+            step = int(value[2:])
+        except ValueError as ex:
+            raise ValueError(f"Invalid {label} step expression '{value}'") from ex
+        if step <= 0:
+            raise ValueError(f"Invalid {label} step '{value}'")
+        return list(range(0, max_value + 1, step))
+    try:
+        parsed = int(value)
+    except ValueError as ex:
+        raise ValueError(f"Invalid {label} value '{value}'") from ex
+    if not (0 <= parsed <= max_value):
+        raise ValueError(f"{label} value '{value}' out of range 0..{max_value}")
+    return [parsed]
+
 
 def load_schedule() -> Tuple[List[ScheduleEntry], Dict[int, List[ScheduleEntry]]]:
     import csv as _csv
@@ -87,20 +112,43 @@ def load_schedule() -> Tuple[List[ScheduleEntry], Dict[int, List[ScheduleEntry]]
                 row = (row + [""] * max_len)[:max_len]
                 try:
                     m, tu, w, th, fr, sa, su = [int((v or "0").strip() or "0") for v in row[:7]]
-                    hour = int((row[hh_idx] if hh_idx < len(row) else "0").strip() or "0")
-                    minute = int((row[mm_idx] if mm_idx < len(row) else "0").strip() or "0")
+                    hour_raw = (row[hh_idx] if hh_idx < len(row) else "0")
+                    minute_raw = (row[mm_idx] if mm_idx < len(row) else "0")
                     rnd = int((row[9] or "0").strip() or "0")
                     dur = int((row[10] or "0").strip() or "0")
                     text = (row[11] or "").strip()
                     action = (row[12] or "").strip()
                     data = (row[13] or "").strip()
-                    e = ScheduleEntry(m, tu, w, th, fr, sa, su, hour, minute, rnd, dur, text, action, data)
-                    print(f"[DEBUG] Adding scheduled action: {e}")
-                    entries.append(e)
-                    flags = [m, tu, w, th, fr, sa, su]
-                    for wd, flag in enumerate(flags):  # Monday=0 .. Sunday=6
-                        if flag:
-                            by_wd[wd].append(e)
+
+                    hours = _parse_time_field(hour_raw, 23, "hour")
+                    minutes = _parse_time_field(minute_raw, 59, "minute")
+
+                    for hour in hours:
+                        for minute in minutes:
+                            e = ScheduleEntry(
+                                m,
+                                tu,
+                                w,
+                                th,
+                                fr,
+                                sa,
+                                su,
+                                hour,
+                                minute,
+                                rnd,
+                                dur,
+                                text,
+                                action,
+                                data,
+                                hour_expr=hour_raw.strip(),
+                                minute_expr=minute_raw.strip(),
+                            )
+                            print(f"[DEBUG] Adding scheduled action: {e}")
+                            entries.append(e)
+                            flags = [m, tu, w, th, fr, sa, su]
+                            for wd, flag in enumerate(flags):  # Monday=0 .. Sunday=6
+                                if flag:
+                                    by_wd[wd].append(e)
                 except Exception as ex:
                     print(f"[ERROR] Row {row_num} parse error: {ex} | {row}")
     except Exception as ex:
