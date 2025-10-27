@@ -194,7 +194,7 @@ Gst.init(None)
 FALLBACK_PATH = "/home/tme520/Videos/LPS/R/c10 - cheeky curious.mp4"
 
 def path_for_hour(hour: int) -> str:
-    base_dir = "/home/tme520/Videos/LPS/H"
+    base_dir = "/home/tme520/Videos/LPS/H/HD/FR"
     candidate = os.path.join(base_dir, f"c10 - {hour:02d}h.mp4")
     return candidate if os.path.exists(candidate) else FALLBACK_PATH
 
@@ -786,7 +786,7 @@ class FullscreenPlayer(Gtk.Window):
     # -------------------------- Startup sequence --------------------------
 
     def enqueue_startup_sequence(self):
-        base_dir = "/home/tme520/Videos/LPS/R"
+        base_dir = "/home/tme520/Videos/LPS/R/HD/FR"
         hello = os.path.join(base_dir, "c10 - wave hello.mp4")
         if os.path.exists(hello):
             self.enqueue_file(hello)
