@@ -71,7 +71,7 @@
     {"Toast-Message": "Cathy is sleeping"}
   ],
   "ACT_EAT_BREAKFAST_WEEKDAY": [
-    {"Play": "/home/tme520/Videos/LPS/R/HD/FR/c10 - breakfast time.mp4"}
+    {"Play": "/home/tme520/Videos/LPS/R/HD/FR/c10 - breakfast time.mp4"},
     {"Play": "/home/tme520/Videos/LPS/R/c10 - eating 1.mp4"}
   ],
   "ACT_EAT_LUNCH_WEEKDAY": [
