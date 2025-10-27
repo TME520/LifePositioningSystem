@@ -421,6 +421,7 @@ class FullscreenPlayer(Gtk.Window):
         # Action executor state
         self._action_running = False
         self._current_action_name = None
+        self._manual_action_last_trigger: Dict[str, datetime] = {}
         self._step_timer_source = None
 
     # -------------------------- UI helpers --------------------------
@@ -751,9 +752,24 @@ class FullscreenPlayer(Gtk.Window):
         elif event.keyval in (Gdk.KEY_a, Gdk.KEY_A):
             # Quick manual test: run test action if present
             print("[DEBUG] A key pressed")
-            self.run_action("ACT_MAGIC_DANCE_WEEKDAY")
+            self._play_manual_action_once("ACT_MAGIC_DANCE_WEEKDAY")
         self.highlight_next_upcoming()
         GLib.timeout_add_seconds(60, self._periodic_highlight)
+
+    def _play_manual_action_once(self, action_name: str):
+        """Trigger a manual action while ignoring rapid repeat events."""
+        now = datetime.now()
+        last_trigger = self._manual_action_last_trigger.get(action_name)
+        if last_trigger and (now - last_trigger) < timedelta(seconds=1):
+            print(f"[DEBUG] Ignoring repeat trigger for {action_name}")
+            return
+
+        if self._action_running and self._current_action_name == action_name:
+            print(f"[DEBUG] {action_name} already running; ignoring manual trigger")
+            return
+
+        self._manual_action_last_trigger[action_name] = now
+        self.run_action(action_name)
 
     # -------------------------- Clock + Hour change + Scheduler tick --------------------------
 
