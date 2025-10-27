@@ -751,7 +751,7 @@ class FullscreenPlayer(Gtk.Window):
         elif event.keyval in (Gdk.KEY_a, Gdk.KEY_A):
             # Quick manual test: run test action if present
             print("[DEBUG] A key pressed")
-            self.run_action("ACT_TEST_TIME_WEEKDAY")
+            self.run_action("ACT_MAGIC_DANCE_WEEKDAY")
         self.highlight_next_upcoming()
         GLib.timeout_add_seconds(60, self._periodic_highlight)
 

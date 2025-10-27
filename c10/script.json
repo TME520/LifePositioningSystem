@@ -16,10 +16,11 @@
     {"Play": "/home/tme520/Videos/LPS/R/c10 - shower time.mp4"}
   ],
   "ACT_BEDTIME_WEEKDAY": [
-    {"Play-Random": "/home/tme520/Videos/LPS/R/c10 - tired [1..2].mp4"},
+    {"Play": "/home/tme520/Videos/LPS/R/HD/FR/c10 - late.mp4"},
     {"Play": "/home/tme520/Videos/LPS/R/c10 - yawning.mp4"},
-    {"Play-Random": "/home/tme520/Videos/LPS/S/c10 - pyjamas [1..16].mp4"},
-    {"Play": "/home/tme520/Videos/LPS/R/c10 - bedtime 1.mp4"},
+    {"Play-Random": "/home/tme520/Videos/LPS/A/HD/c10 - pyjamas [1..13].mp4"},
+    {"Play": "/home/tme520/Videos/LPS/R/HD/FR/c10 - bedtime.mp4"},
+    {"Play-Random": "/home/tme520/Videos/LPS/R/c10 - sleep [1..7].mp4"},
     {"Toast-Message": "Cathy is sleeping"}
   ],
   "ACT_ACTIVITY_SINGING_LESSON_WEEKDAY": [
@@ -28,6 +29,7 @@
   ],
   "ACT_ACTIVITY_BALLET_LESSON_WEEKDAY": [
     {"Play": "/home/tme520/Videos/LPS/R/c10 - ballet lesson time.mp4"},
+    {"Play": "/home/tme520/Videos/LPS/R/c10 - ballet.mp4"},
     {"Play": "/home/tme520/Videos/LPS/D/c10 - door 1.mp4"}
   ],
   "ACT_ACTIVITY_PIANO_LESSON_WEEKDAY": [
@@ -47,6 +49,7 @@
   ],
   "ACT_ACTIVITY_TENNIS_LESSON_WEEKEND": [
     {"Play": "/home/tme520/Videos/LPS/R/c10 - tennis time.mp4"},
+    {"Play": "/home/tme520/Videos/LPS/R/c10 - tennis 2.mp4"},
     {"Play": "/home/tme520/Videos/LPS/D/c10 - door 1.mp4"},
     {"Play": "/home/tme520/Videos/LPS/R/c10 - tennis.mp4"}
   ],
@@ -62,25 +65,27 @@
   "ACT_BEDTIME_WEEKEND": [
     {"Play-Random": "/home/tme520/Videos/LPS/R/c10 - tired [1..2].mp4"},
     {"Play": "/home/tme520/Videos/LPS/R/c10 - yawning.mp4"},
-    {"Play-Random": "/home/tme520/Videos/LPS/S/c10 - pyjamas [1..16].mp4"},
-    {"Play": "/home/tme520/Videos/LPS/R/c10 - bedtime 1.mp4"},
+    {"Play-Random": "/home/tme520/Videos/LPS/A/HD/c10 - pyjamas [1..13].mp4"},
+    {"Play": "/home/tme520/Videos/LPS/R/HD/FR/c10 - bedtime.mp4"},
+    {"Play-Random": "/home/tme520/Videos/LPS/R/c10 - sleep [1..7].mp4"},
     {"Toast-Message": "Cathy is sleeping"}
   ],
   "ACT_EAT_BREAKFAST_WEEKDAY": [
-    {"Play": "/home/tme520/Videos/LPS/R/c10 - eating apple.mp4"}
+    {"Play": "/home/tme520/Videos/LPS/R/HD/FR/c10 - breakfast time.mp4"}
+    {"Play": "/home/tme520/Videos/LPS/R/c10 - eating 1.mp4"}
   ],
   "ACT_EAT_LUNCH_WEEKDAY": [
-    {"Play": "/home/tme520/Videos/LPS/R/c10 - lunchtime.mp4"},
-    {"Play": "/home/tme520/Videos/LPS/R/c10 - eating apple.mp4"},
-    {"Play": "/home/tme520/Videos/LPS/R/c10 - drinking water.mp4"}
+    {"Play": "/home/tme520/Videos/LPS/R/HD/FR/c10 - lunchtime.mp4"},
+    {"Play": "/home/tme520/Videos/LPS/R/c10 - eating 1.mp4"},
+    {"Play": "/home/tme520/Videos/LPS/R/c10 - drinking 2.mp4"}
   ],
   "ACT_EAT_DINNER_WEEKDAY": [
-    {"Play": "/home/tme520/Videos/LPS/R/c10 - hungry.mp4"},
-    {"Play": "/home/tme520/Videos/LPS/R/c10 - eating apple.mp4"},
-    {"Play": "/home/tme520/Videos/LPS/R/c10 - drinking water.mp4"}
+    {"Play": "/home/tme520/Videos/LPS/R/HD/FR/c10 - dinner time.mp4"},
+    {"Play": "/home/tme520/Videos/LPS/R/c10 - eating 1.mp4"},
+    {"Play-Random": "/home/tme520/Videos/LPS/R/c10 - drinking [1..2].mp4"}
   ],
   "ACT_TEST_TIME_WEEKDAY": [
-    {"Play-Random": "/home/tme520/Videos/LPS/S/c10 - pyjamas [1..16].mp4"},
+    {"Play-Random": "/home/tme520/Videos/LPS/A/HD/c10 - pyjamas [1..13].mp4"},
     {"Toast-Message": "This is a test (1)"},
     {"Play-Random": "/home/tme520/Videos/LPS/S/c10 - karate [1..7].mp4"},
     {"Wait": "1 minute"},
@@ -91,7 +96,7 @@
     {"Play-Random": "/home/tme520/Videos/LPS/S/c10 - dancing [1..8].mp4"}
   ],
   "ACT_RND_KARATE_WEEKEND": [
-    {"Play-Random": "/home/tme520/Videos/LPS/S/c10 - karate [1..7].mp4"}
+    {"Play-Random": "/home/tme520/Videos/LPS/A/HD/c10 - karate [1..23].mp4"}
   ],
   "ACT_RND_MAGIC_WEEKDAY": [
     {"Play-Random": "/home/tme520/Videos/LPS/M/c10 - magic [1..16].mp4"}
