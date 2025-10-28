@@ -191,10 +191,10 @@ def load_actions_script() -> Dict[str, List[Dict[str, str]]]:
 Gst.init(None)
 
 # Fallback if the hour-mapped file doesn't exist
-FALLBACK_PATH = "/home/tme520/Videos/LPS/R/c10 - cheeky curious.mp4"
+FALLBACK_PATH = "/home/tme520/Videos/LPS/moves/c10 - sitting 1.mp4"
 
 def path_for_hour(hour: int) -> str:
-    base_dir = "/home/tme520/Videos/LPS/H/HD/FR"
+    base_dir = "/home/tme520/Videos/LPS/announcements/FR"
     candidate = os.path.join(base_dir, f"c10 - {hour:02d}h.mp4")
     return candidate if os.path.exists(candidate) else FALLBACK_PATH
 
@@ -802,18 +802,19 @@ class FullscreenPlayer(Gtk.Window):
     # -------------------------- Startup sequence --------------------------
 
     def enqueue_startup_sequence(self):
-        base_dir = "/home/tme520/Videos/LPS/R/HD/FR"
-        hello = os.path.join(base_dir, "c10 - wave hello.mp4")
+        base_dir_wave = "/home/tme520/Videos/LPS/moves"
+        hello = os.path.join(base_dir_wave, "c10 - wave hello 3.mp4")
+        base_dir_nice = "/home/tme520/Videos/LPS/announcements/FR"
         if os.path.exists(hello):
             self.enqueue_file(hello)
-        # Optional “nice {weekday}”
+        # Optional “good {weekday}”
         names = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"]
         try:
             wd = datetime.now().weekday()
             print(f"[INFO] Day of the week: {wd}")
         except Exception:
             wd = 0
-        daymsg = os.path.join(base_dir, f"c10 - nice {names[wd]}.mp4")
+        daymsg = os.path.join(base_dir_nice, f"c10 - good {names[wd]}.mp4")
         if os.path.exists(daymsg):
             self.enqueue_file(daymsg)
         print(f"[Startup] Enqueued: {[p for p in [hello, daymsg] if p and os.path.exists(p)]}")
