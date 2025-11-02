@@ -192,6 +192,15 @@ Gst.init(None)
 
 # Fallback if the hour-mapped file doesn't exist
 FALLBACK_PATH = "/home/tme520/Videos/LPS/moves/c10 - sitting 1.mp4"
+WEEKDAY_NAMES = [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+]
 
 def path_for_hour(hour: int) -> str:
     base_dir = "/home/tme520/Videos/LPS/announcements/FR"
@@ -218,6 +227,7 @@ class FullscreenPlayer(Gtk.Window):
         self._today_offsets: Dict[int, int] = {}      # idx -> minutes
         self._today_fired: Dict[int, bool] = {}       # idx -> fired
         self._seed_today_offsets()
+        self._last_day_greeting_date = self._today_key
 
         # Playback queue and state
         self.play_queue: List[str] = []
@@ -781,6 +791,7 @@ class FullscreenPlayer(Gtk.Window):
             print("[INFO] New day")
             self._today_key = now.date()
             self._seed_today_offsets(force=True)
+            self.enqueue_day_greeting(now)
 
         # Hour change trigger: enqueue instead of interrupt
         if now.hour != self.last_seen_hour:
@@ -808,16 +819,36 @@ class FullscreenPlayer(Gtk.Window):
         if os.path.exists(hello):
             self.enqueue_file(hello)
         # Optional “good {weekday}”
-        names = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"]
         try:
             wd = datetime.now().weekday()
             print(f"[INFO] Day of the week: {wd}")
         except Exception:
             wd = 0
-        daymsg = os.path.join(base_dir_nice, f"c10 - good {names[wd]}.mp4")
+        daymsg = os.path.join(base_dir_nice, f"c10 - good {WEEKDAY_NAMES[wd]}.mp4")
         if os.path.exists(daymsg):
             self.enqueue_file(daymsg)
         print(f"[Startup] Enqueued: {[p for p in [hello, daymsg] if p and os.path.exists(p)]}")
+
+    def enqueue_day_greeting(self, now: Optional[datetime] = None):
+        now = now or datetime.now()
+        if self._last_day_greeting_date == now.date():
+            return
+
+        weekday_idx = now.weekday()
+        base_dir_nice = "/home/tme520/Videos/LPS/announcements/FR"
+        greeting_path = os.path.join(
+            base_dir_nice, f"c10 - good {WEEKDAY_NAMES[weekday_idx]}.mp4"
+        )
+
+        if os.path.exists(greeting_path):
+            print(f"[INFO] Enqueuing day greeting: {greeting_path}")
+            self.enqueue_file(greeting_path)
+        else:
+            print(
+                f"[WARN] Greeting video not found for {WEEKDAY_NAMES[weekday_idx]}: {greeting_path}"
+            )
+
+        self._last_day_greeting_date = now.date()
 
     # -------------------------- Schedule view --------------------------
 
