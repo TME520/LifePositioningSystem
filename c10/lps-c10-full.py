@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import gi, os, json, re, random
+import gi, os, json, re, random, calendar
 from datetime import datetime, timedelta
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
@@ -362,6 +362,10 @@ class FullscreenPlayer(Gtk.Window):
             "    border-radius: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.8);",
             "}",
             ".schedule-panel { background-color: rgba(0,0,0,0.45); border-radius: 10px; padding: 8px; }",
+            ".calendar-panel { background-color: rgba(0,0,0,0.45); border-radius: 10px; padding: 12px 16px; }",
+            "#calendar-title { font-size: 16pt; font-weight: 600; color: white; margin-bottom: 6px; }",
+            ".calendar-day-label { font-size: 12pt; color: white; padding: 4px 6px; border-radius: 6px; }",
+            ".calendar-day-today { background-color: rgba(255,255,255,0.25); color: black; font-weight: 700; }",
             "GtkWindow { background-color: black; }",
             "GtkOverlay { background-color: transparent; }",
         ]
@@ -391,7 +395,9 @@ class FullscreenPlayer(Gtk.Window):
 
         # Schedule view (for visibility / debugging)
         self.build_schedule_view()
+        self.build_calendar_view()
         self.populate_schedule_view()
+        self.update_calendar()
         self.highlight_next_upcoming()
         GLib.timeout_add_seconds(60, self._periodic_highlight)
 
@@ -792,6 +798,7 @@ class FullscreenPlayer(Gtk.Window):
             self._today_key = now.date()
             self._seed_today_offsets(force=True)
             self.enqueue_day_greeting(now)
+            self.update_calendar()
 
         # Hour change trigger: enqueue instead of interrupt
         if now.hour != self.last_seen_hour:
@@ -909,6 +916,76 @@ class FullscreenPlayer(Gtk.Window):
                 self.schedule_box.hide()
         else:
             self.schedule_box.hide()
+
+    def build_calendar_view(self):
+        self.calendar_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        self.calendar_box.get_style_context().add_class("calendar-panel")
+        self.calendar_box.set_halign(Gtk.Align.START)
+        self.calendar_box.set_valign(Gtk.Align.START)
+        self.calendar_box.set_margin_start(24)
+        self.calendar_box.set_margin_top(24)
+
+        self.calendar_title = Gtk.Label()
+        self.calendar_title.set_name("calendar-title")
+        self.calendar_title.set_halign(Gtk.Align.CENTER)
+        self.calendar_box.pack_start(self.calendar_title, False, False, 0)
+
+        self.calendar_grid = Gtk.Grid()
+        self.calendar_grid.set_column_spacing(8)
+        self.calendar_grid.set_row_spacing(4)
+        self.calendar_box.pack_start(self.calendar_grid, True, True, 0)
+
+        self.overlay.add_overlay(self.calendar_box)
+        self.calendar_box.show_all()
+        self._calendar_day_labels: Dict[int, Gtk.Label] = {}
+        self._calendar_month = None
+
+    def update_calendar(self):
+        now = datetime.now()
+        month_key = (now.year, now.month)
+        if getattr(self, "_calendar_month", None) == month_key:
+            # Only update the highlight
+            self._update_calendar_highlight(now.day)
+            return
+
+        self._calendar_month = month_key
+        cal = calendar.Calendar(firstweekday=0)
+        month_matrix = cal.monthdayscalendar(now.year, now.month)
+        for child in list(self.calendar_grid.get_children()):
+            self.calendar_grid.remove(child)
+        self._calendar_day_labels.clear()
+
+        self.calendar_title.set_text(f"{calendar.month_name[now.month]} {now.year}")
+
+        weekday_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        for col, day_name in enumerate(weekday_names):
+            header = Gtk.Label(label=day_name)
+            header.get_style_context().add_class("calendar-day-label")
+            header.set_halign(Gtk.Align.CENTER)
+            header.set_valign(Gtk.Align.CENTER)
+            self.calendar_grid.attach(header, col, 0, 1, 1)
+
+        for row, week in enumerate(month_matrix, start=1):
+            for col, day in enumerate(week):
+                label_text = "" if day == 0 else str(day)
+                day_label = Gtk.Label(label=label_text)
+                day_label.get_style_context().add_class("calendar-day-label")
+                day_label.set_halign(Gtk.Align.CENTER)
+                day_label.set_valign(Gtk.Align.CENTER)
+                self.calendar_grid.attach(day_label, col, row, 1, 1)
+                if day:
+                    self._calendar_day_labels[day] = day_label
+
+        self.calendar_box.show_all()
+        self._update_calendar_highlight(now.day)
+
+    def _update_calendar_highlight(self, current_day: int):
+        for day, label in self._calendar_day_labels.items():
+            ctx = label.get_style_context()
+            if day == current_day:
+                ctx.add_class("calendar-day-today")
+            else:
+                ctx.remove_class("calendar-day-today")
 
     def populate_schedule_view(self):
         if not hasattr(self, "schedule_store"):
