@@ -562,11 +562,13 @@ class FullscreenPlayer(Gtk.Window):
         self.show_toast("Configuration saved")
 
     def toggle_config_visibility(self):
-        self.config_visible = not getattr(self, "config_visible", False)
-        if self.config_visible:
-            self.config_box.show_all()
-        else:
+        currently_visible = self.config_box.get_visible()
+        if currently_visible:
             self.config_box.hide()
+            self.config_visible = False
+        else:
+            self.config_box.show_all()
+            self.config_visible = True
 
     def _set_window_background_color(self, rgba):
         """Update the window/overlay background colour while keeping the video surface white."""

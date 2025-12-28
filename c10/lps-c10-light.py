@@ -415,11 +415,13 @@ class FullscreenPlayer(Gtk.Window):
         print("[INFO] Configuration saved")
 
     def toggle_config_visibility(self):
-        self.config_visible = not getattr(self, "config_visible", False)
-        if self.config_visible:
-            self.config_box.show_all()
-        else:
+        currently_visible = self.config_box.get_visible()
+        if currently_visible:
             self.config_box.hide()
+            self.config_visible = False
+        else:
+            self.config_box.show_all()
+            self.config_visible = True
 
     # Window realize: hide cursor & go fullscreen
     def on_window_realize(self, *_):
