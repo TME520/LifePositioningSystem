@@ -186,6 +186,34 @@ def load_actions_script() -> Dict[str, List[Dict[str, str]]]:
         print(f"[ERROR] Failed reading script.json: {ex}")
         return {}
 
+# -------------------------- Config support --------------------------
+
+def _resolve_config_path() -> str:
+    return os.path.join(os.path.dirname(__file__), "lps.rc")
+
+def load_config() -> Dict[str, str]:
+    path = _resolve_config_path()
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            if isinstance(data, dict):
+                print(f"[DEBUG] Loaded config from {path}")
+                return data
+    except Exception as ex:
+        print(f"[WARN] Failed reading config {path}: {ex}")
+    return {}
+
+def save_config(data: Dict[str, str]) -> None:
+    path = _resolve_config_path()
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, sort_keys=True)
+        print(f"[INFO] Saved config to {path}")
+    except Exception as ex:
+        print(f"[ERROR] Failed writing config {path}: {ex}")
+
 # -------------------------- GStreamer init --------------------------
 
 Gst.init(None)
@@ -221,6 +249,8 @@ class FullscreenPlayer(Gtk.Window):
         self.schedule, self.schedule_by_weekday = load_schedule()
         print(f"[DEBUG] schedule: {self.schedule}")
         self.actions_script = load_actions_script()
+        self.config = load_config()
+        self.selected_language = self.config.get("language", "English")
 
         # Day roll state (for random offsets + fired flags)
         self._today_key = datetime.now().date()
@@ -366,6 +396,11 @@ class FullscreenPlayer(Gtk.Window):
             "#calendar-title { font-size: 16pt; font-weight: 600; color: white; margin-bottom: 6px; }",
             ".calendar-day-label { font-size: 12pt; color: white; padding: 4px 6px; border-radius: 6px; }",
             ".calendar-day-today { background-color: rgba(255,255,255,0.25); color: black; font-weight: 700; }",
+            ".config-panel { background-color: rgba(0,0,0,0.7); border-radius: 12px; padding: 20px 28px; }",
+            "#config-title { font-size: 20pt; font-weight: 700; color: white; margin-bottom: 8px; }",
+            ".config-section-title { font-size: 14pt; font-weight: 600; color: white; }",
+            ".config-option { font-size: 12pt; color: white; }",
+            ".config-save-button { font-size: 12pt; font-weight: 700; padding: 8px 16px; }",
             "GtkWindow { background-color: black; }",
             "GtkOverlay { background-color: transparent; }",
         ]
@@ -396,6 +431,7 @@ class FullscreenPlayer(Gtk.Window):
         # Schedule view (for visibility / debugging)
         self.build_schedule_view()
         self.build_calendar_view()
+        self.build_config_view()
         self.populate_schedule_view()
         self.update_calendar()
         self.highlight_next_upcoming()
@@ -466,6 +502,69 @@ class FullscreenPlayer(Gtk.Window):
             self.toast_hide_source = None
             return False
         self.toast_hide_source = GLib.timeout_add_seconds(seconds, _hide)
+
+    # -------------------------- Config view --------------------------
+
+    def build_config_view(self):
+        self.config_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        self.config_box.get_style_context().add_class("config-panel")
+        self.config_box.set_halign(Gtk.Align.CENTER)
+        self.config_box.set_valign(Gtk.Align.CENTER)
+
+        title = Gtk.Label(label="Configuration")
+        title.set_name("config-title")
+        title.set_halign(Gtk.Align.CENTER)
+        self.config_box.pack_start(title, False, False, 0)
+
+        language_label = Gtk.Label(label="Language")
+        language_label.get_style_context().add_class("config-section-title")
+        language_label.set_halign(Gtk.Align.START)
+        self.config_box.pack_start(language_label, False, False, 0)
+
+        language_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        language_box.set_halign(Gtk.Align.CENTER)
+        self.language_en_button = Gtk.RadioButton.new_with_label_from_widget(None, "English")
+        self.language_fr_button = Gtk.RadioButton.new_with_label_from_widget(self.language_en_button, "French")
+        self.language_en_button.get_style_context().add_class("config-option")
+        self.language_fr_button.get_style_context().add_class("config-option")
+        self.language_en_button.connect("toggled", self.on_language_toggled, "English")
+        self.language_fr_button.connect("toggled", self.on_language_toggled, "French")
+        if self.selected_language == "French":
+            self.language_fr_button.set_active(True)
+        else:
+            self.language_en_button.set_active(True)
+        language_box.pack_start(self.language_en_button, False, False, 0)
+        language_box.pack_start(self.language_fr_button, False, False, 0)
+        self.config_box.pack_start(language_box, False, False, 0)
+
+        save_button = Gtk.Button(label="Save")
+        save_button.get_style_context().add_class("config-save-button")
+        save_button.set_halign(Gtk.Align.CENTER)
+        save_button.connect("clicked", self.on_save_config)
+        self.config_box.pack_start(save_button, False, False, 8)
+
+        self.overlay.add_overlay(self.config_box)
+        try:
+            self.overlay.set_overlay_pass_through(self.config_box, False)
+        except Exception:
+            pass
+        self.config_box.hide()
+        self.config_visible = False
+
+    def on_language_toggled(self, button, language: str):
+        if button.get_active():
+            self.selected_language = language
+
+    def on_save_config(self, _button):
+        save_config({"language": self.selected_language})
+        self.show_toast("Configuration saved")
+
+    def toggle_config_visibility(self):
+        self.config_visible = not getattr(self, "config_visible", False)
+        if self.config_visible:
+            self.config_box.show_all()
+        else:
+            self.config_box.hide()
 
     def _set_window_background_color(self, rgba):
         """Update the window/overlay background colour while keeping the video surface white."""
@@ -765,6 +864,9 @@ class FullscreenPlayer(Gtk.Window):
             self.schedule, self.schedule_by_weekday = load_schedule()
             self.populate_schedule_view()
             self._seed_today_offsets(force=True)
+        elif event.keyval in (Gdk.KEY_c, Gdk.KEY_C):
+            print("[DEBUG] C key pressed")
+            self.toggle_config_visibility()
         elif event.keyval in (Gdk.KEY_a, Gdk.KEY_A):
             # Quick manual test: run test action if present
             print("[DEBUG] A key pressed")
