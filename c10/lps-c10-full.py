@@ -432,6 +432,8 @@ class FullscreenPlayer(Gtk.Window):
         self.build_schedule_view()
         self.build_calendar_view()
         self.build_config_view()
+        self.config_visible = False
+        self.config_box.hide()
         self.populate_schedule_view()
         self.update_calendar()
         self.highlight_next_upcoming()

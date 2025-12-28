@@ -271,6 +271,8 @@ class FullscreenPlayer(Gtk.Window):
         # Build and fill the schedule table
         self.build_schedule_view()
         self.build_config_view()
+        self.config_visible = False
+        self.config_box.hide()
         self.populate_schedule_view()
         self.highlight_next_upcoming()
         GLib.timeout_add_seconds(60, self._periodic_highlight)
