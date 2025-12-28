@@ -423,6 +423,11 @@ class FullscreenPlayer(Gtk.Window):
             self.config_box.show_all()
             self.config_visible = True
 
+    def hide_config_if_visible(self):
+        if self.config_box.get_visible():
+            self.config_box.hide()
+            self.config_visible = False
+
     # Window realize: hide cursor & go fullscreen
     def on_window_realize(self, *_):
         gdk_win = self.get_window()
@@ -465,6 +470,7 @@ class FullscreenPlayer(Gtk.Window):
             print(f"[Error] File not found for hour {hour:02d}: {path}")
             self.stop_to_clock()
             return
+        self.hide_config_if_visible()
         # ensure video widget is visible
         self.show_video_layer()
         # set pipeline
@@ -481,6 +487,7 @@ class FullscreenPlayer(Gtk.Window):
             print(f"[Startup] File not found: {path}")
             self.stop_to_clock()
             return
+        self.hide_config_if_visible()
         self.show_video_layer()
         try:
             self.pipe.set_state(Gst.State.NULL)

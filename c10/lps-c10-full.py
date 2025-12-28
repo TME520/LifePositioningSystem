@@ -570,6 +570,11 @@ class FullscreenPlayer(Gtk.Window):
             self.config_box.show_all()
             self.config_visible = True
 
+    def hide_config_if_visible(self):
+        if self.config_box.get_visible():
+            self.config_box.hide()
+            self.config_visible = False
+
     def _set_window_background_color(self, rgba):
         """Update the window/overlay background colour while keeping the video surface white."""
 
@@ -847,6 +852,7 @@ class FullscreenPlayer(Gtk.Window):
         except Exception:
             return
         if new_state == Gst.State.PLAYING:
+            self.hide_config_if_visible()
             self._update_background_state(True)
             self._set_window_background_color(self._white_rgba)
         elif new_state in (Gst.State.NULL, Gst.State.READY, Gst.State.PAUSED):
