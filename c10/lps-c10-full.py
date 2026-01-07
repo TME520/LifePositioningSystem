@@ -161,18 +161,12 @@ def load_schedule() -> Tuple[List[ScheduleEntry], Dict[int, List[ScheduleEntry]]
 # -------------------------- Script JSON support --------------------------
 
 _RANGE_RE = re.compile(r"\[(\d+)\s*(?:\.\.|\.)\s*(\d+)\]")  # accepts [1..5] and [1.5]
-_RNG = random.Random()
-
-def _seed_randomness() -> None:
-    seed = int.from_bytes(os.urandom(16), "big") ^ os.getpid() ^ datetime.now().timestamp_ns()
-    _RNG.seed(seed)
-    print(f"[DEBUG] Random seed initialized: {seed}")
 
 def expand_play_random(pattern: str) -> str:
     def repl(m):
         a, b = int(m.group(1)), int(m.group(2))
         if a > b: a, b = b, a
-        return str(_RNG.randint(a, b))
+        return str(random.randint(a, b))
     return _RANGE_RE.sub(repl, pattern)
 
 def load_actions_script() -> Dict[str, List[Dict[str, str]]]:
@@ -1175,7 +1169,7 @@ class FullscreenPlayer(Gtk.Window):
         for idx, e in enumerate(self.schedule):
             if idx not in self._today_offsets:
                 rnd = max(0, int(e.random or 0))
-                self._today_offsets[idx] = _RNG.randint(0, rnd) if rnd > 0 else 0
+                self._today_offsets[idx] = random.randint(0, rnd) if rnd > 0 else 0
             self._today_fired[idx] = False
 
     def _check_and_fire_scheduled(self, now: datetime):
@@ -1292,7 +1286,6 @@ class FullscreenPlayer(Gtk.Window):
 # -------------------------- App bootstrap --------------------------
 
 if __name__ == "__main__":
-    _seed_randomness()
     player = FullscreenPlayer()
     player.show_all()
     Gtk.main()
