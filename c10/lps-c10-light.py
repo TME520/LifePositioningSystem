@@ -1,6 +1,6 @@
 
 #!/usr/bin/env python3
-import gi, os
+import gi, os, json
 from datetime import datetime
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
@@ -96,6 +96,34 @@ def load_schedule() -> Tuple[List[ScheduleEntry], Dict[int, List[ScheduleEntry]]
     print(f"[Schedule] Loaded {len(entries)} entries from {schedule_path}.")
     return entries, by_wd
 
+# -------------------------- Config support --------------------------
+
+def _resolve_config_path() -> str:
+    return os.path.join(os.path.dirname(__file__), "lps.rc")
+
+def load_config() -> Dict[str, str]:
+    path = _resolve_config_path()
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            if isinstance(data, dict):
+                print(f"[DEBUG] Loaded config from {path}")
+                return data
+    except Exception as ex:
+        print(f"[WARN] Failed reading config {path}: {ex}")
+    return {}
+
+def save_config(data: Dict[str, str]) -> None:
+    path = _resolve_config_path()
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, sort_keys=True)
+        print(f"[INFO] Saved config to {path}")
+    except Exception as ex:
+        print(f"[ERROR] Failed writing config {path}: {ex}")
+
 Gst.init(None)
 
 # Fallback if the hour-mapped file doesn't exist
@@ -113,6 +141,8 @@ class FullscreenPlayer(Gtk.Window):
 
         # Load schedule at startup
         self.schedule, self.schedule_by_weekday = load_schedule()
+        self.config = load_config()
+        self.selected_language = self.config.get("language", "English")
 
         # Minimal/invisible window chrome
         self.set_decorated(False)
@@ -224,8 +254,25 @@ class FullscreenPlayer(Gtk.Window):
             screen, provider2, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
 
+        # ---- Config panel CSS ----
+        css3 = b"""
+        .config-panel { background-color: rgba(0,0,0,0.7); border-radius: 12px; padding: 20px 28px; }
+        #config-title { font-size: 20pt; font-weight: 700; color: white; margin-bottom: 8px; }
+        .config-section-title { font-size: 14pt; font-weight: 600; color: white; }
+        .config-option { font-size: 12pt; color: white; }
+        .config-save-button { font-size: 12pt; font-weight: 700; padding: 8px 16px; }
+        """
+        provider3 = Gtk.CssProvider()
+        provider3.load_from_data(css3)
+        Gtk.StyleContext.add_provider_for_screen(
+            screen, provider3, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
         # Build and fill the schedule table
         self.build_schedule_view()
+        self.build_config_view()
+        self.config_visible = False
+        self.config_box.hide()
         self.populate_schedule_view()
         self.highlight_next_upcoming()
         GLib.timeout_add_seconds(60, self._periodic_highlight)
@@ -274,6 +321,8 @@ class FullscreenPlayer(Gtk.Window):
         elif event.keyval in (Gdk.KEY_r, Gdk.KEY_R):
             self.schedule, self.schedule_by_weekday = load_schedule()
             self.populate_schedule_view()
+        elif event.keyval in (Gdk.KEY_c, Gdk.KEY_C):
+            self.toggle_config_visibility()
         self.highlight_next_upcoming()
         GLib.timeout_add_seconds(60, self._periodic_highlight)
 
@@ -308,6 +357,76 @@ class FullscreenPlayer(Gtk.Window):
             self.video_widget.show()
         elif hasattr(self, "da"):
             self.da.show()
+
+    # -------------------------- Config view --------------------------
+
+    def build_config_view(self):
+        self.config_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        self.config_box.get_style_context().add_class("config-panel")
+        self.config_box.set_halign(Gtk.Align.CENTER)
+        self.config_box.set_valign(Gtk.Align.CENTER)
+
+        title = Gtk.Label(label="Configuration")
+        title.set_name("config-title")
+        title.set_halign(Gtk.Align.CENTER)
+        self.config_box.pack_start(title, False, False, 0)
+
+        language_label = Gtk.Label(label="Language")
+        language_label.get_style_context().add_class("config-section-title")
+        language_label.set_halign(Gtk.Align.START)
+        self.config_box.pack_start(language_label, False, False, 0)
+
+        language_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        language_box.set_halign(Gtk.Align.CENTER)
+        self.language_en_button = Gtk.RadioButton.new_with_label_from_widget(None, "English")
+        self.language_fr_button = Gtk.RadioButton.new_with_label_from_widget(self.language_en_button, "French")
+        self.language_en_button.get_style_context().add_class("config-option")
+        self.language_fr_button.get_style_context().add_class("config-option")
+        self.language_en_button.connect("toggled", self.on_language_toggled, "English")
+        self.language_fr_button.connect("toggled", self.on_language_toggled, "French")
+        if self.selected_language == "French":
+            self.language_fr_button.set_active(True)
+        else:
+            self.language_en_button.set_active(True)
+        language_box.pack_start(self.language_en_button, False, False, 0)
+        language_box.pack_start(self.language_fr_button, False, False, 0)
+        self.config_box.pack_start(language_box, False, False, 0)
+
+        save_button = Gtk.Button(label="Save")
+        save_button.get_style_context().add_class("config-save-button")
+        save_button.set_halign(Gtk.Align.CENTER)
+        save_button.connect("clicked", self.on_save_config)
+        self.config_box.pack_start(save_button, False, False, 8)
+
+        self.overlay.add_overlay(self.config_box)
+        try:
+            self.overlay.set_overlay_pass_through(self.config_box, False)
+        except Exception:
+            pass
+        self.config_box.hide()
+        self.config_visible = False
+
+    def on_language_toggled(self, button, language: str):
+        if button.get_active():
+            self.selected_language = language
+
+    def on_save_config(self, _button):
+        save_config({"language": self.selected_language})
+        print("[INFO] Configuration saved")
+
+    def toggle_config_visibility(self):
+        currently_visible = self.config_box.get_visible()
+        if currently_visible:
+            self.config_box.hide()
+            self.config_visible = False
+        else:
+            self.config_box.show_all()
+            self.config_visible = True
+
+    def hide_config_if_visible(self):
+        if self.config_box.get_visible():
+            self.config_box.hide()
+            self.config_visible = False
 
     # Window realize: hide cursor & go fullscreen
     def on_window_realize(self, *_):
@@ -351,6 +470,7 @@ class FullscreenPlayer(Gtk.Window):
             print(f"[Error] File not found for hour {hour:02d}: {path}")
             self.stop_to_clock()
             return
+        self.hide_config_if_visible()
         # ensure video widget is visible
         self.show_video_layer()
         # set pipeline
@@ -367,6 +487,7 @@ class FullscreenPlayer(Gtk.Window):
             print(f"[Startup] File not found: {path}")
             self.stop_to_clock()
             return
+        self.hide_config_if_visible()
         self.show_video_layer()
         try:
             self.pipe.set_state(Gst.State.NULL)
