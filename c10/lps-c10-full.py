@@ -936,6 +936,7 @@ class FullscreenPlayer(Gtk.Window):
         hello = os.path.join(base_dir_wave, "c10 - wave hello 3.mp4")
         base_dir_nice = "/home/tme520/Videos/LPS/announcements/FR"
         base_dir_announcements = "/home/tme520/Videos/LPS/announcements"
+        locale = "FR" if self.selected_language == "French" else "EN"
         startup_enqueued = []
         if os.path.exists(hello):
             self.enqueue_file(hello)
@@ -963,6 +964,16 @@ class FullscreenPlayer(Gtk.Window):
         if os.path.exists(day_of_month_msg):
             self.enqueue_file(day_of_month_msg)
             startup_enqueued.append(day_of_month_msg)
+
+            month_name = calendar.month_name[now.month].lower()
+            month_msg = os.path.join(
+                base_dir_announcements,
+                locale,
+                f"c10 - {month_name}.mp4",
+            )
+            if os.path.exists(month_msg):
+                self.enqueue_file(month_msg)
+                startup_enqueued.append(month_msg)
 
         print(f"[Startup] Enqueued: {startup_enqueued}")
 
