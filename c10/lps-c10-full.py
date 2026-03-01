@@ -934,18 +934,23 @@ class FullscreenPlayer(Gtk.Window):
     def enqueue_startup_sequence(self):
         base_dir_wave = "/home/tme520/Videos/LPS/moves"
         hello = os.path.join(base_dir_wave, "c10 - wave hello 3.mp4")
-        base_dir_nice = "/home/tme520/Videos/LPS/announcements/FR"
+        base_dir_nice = "/home/tme520/Videos/LPS/announcements"
         if os.path.exists(hello):
             self.enqueue_file(hello)
-        # Optional “good {weekday}”
+
+        # Optional daily announcement: c10 - day X.mp4 (X = current day of month)
         try:
-            wd = datetime.now().weekday()
-            print(f"[INFO] Day of the week: {wd}")
+            day_of_month = datetime.now().day
+            print(f"[INFO] Day of month: {day_of_month}")
         except Exception:
-            wd = 0
-        daymsg = os.path.join(base_dir_nice, f"c10 - good {WEEKDAY_NAMES[wd]}.mp4")
+            day_of_month = 1
+
+        daymsg = os.path.join(base_dir_nice, f"c10 - day {day_of_month}.mp4")
         if os.path.exists(daymsg):
             self.enqueue_file(daymsg)
+        else:
+            print(f"[WARN] Startup day announcement not found: {daymsg}")
+
         print(f"[Startup] Enqueued: {[p for p in [hello, daymsg] if p and os.path.exists(p)]}")
 
     def enqueue_day_greeting(self, now: Optional[datetime] = None):
