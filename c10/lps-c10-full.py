@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-import gi, os, json, re, random
+import gi, os, json, re, random, calendar
 from datetime import datetime, timedelta
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
 gi.require_version('GstVideo', '1.0')
-from gi.repository import Gtk, Gst, Gdk, GLib
+from gi.repository import Gtk, Gst, Gdk, GLib, GstVideo
 
 from dataclasses import dataclass
 from typing import List, Dict, Optional, Tuple
@@ -27,6 +27,8 @@ class ScheduleEntry:
     text: str          # toast at start (optional)
     action: str        # ACT_*
     data: str          # expected "FF"
+    hour_expr: str = ""
+    minute_expr: str = ""
 
 def _resolve_path(candidates: List[str]) -> Optional[str]:
     from pathlib import Path as _P
@@ -55,6 +57,29 @@ def _resolve_scriptjson_path() -> Optional[str]:
         os.path.join(os.getcwd(), "script.json"),
         "/mnt/data/script.json",
     ])
+
+def _parse_time_field(value: str, max_value: int, label: str) -> List[int]:
+    value = (value or "").strip()
+    if not value:
+        return [0]
+    if value == "*":
+        return list(range(0, max_value + 1))
+    if value.startswith("*/"):
+        try:
+            step = int(value[2:])
+        except ValueError as ex:
+            raise ValueError(f"Invalid {label} step expression '{value}'") from ex
+        if step <= 0:
+            raise ValueError(f"Invalid {label} step '{value}'")
+        return list(range(0, max_value + 1, step))
+    try:
+        parsed = int(value)
+    except ValueError as ex:
+        raise ValueError(f"Invalid {label} value '{value}'") from ex
+    if not (0 <= parsed <= max_value):
+        raise ValueError(f"{label} value '{value}' out of range 0..{max_value}")
+    return [parsed]
+
 
 def load_schedule() -> Tuple[List[ScheduleEntry], Dict[int, List[ScheduleEntry]]]:
     import csv as _csv
@@ -87,20 +112,43 @@ def load_schedule() -> Tuple[List[ScheduleEntry], Dict[int, List[ScheduleEntry]]
                 row = (row + [""] * max_len)[:max_len]
                 try:
                     m, tu, w, th, fr, sa, su = [int((v or "0").strip() or "0") for v in row[:7]]
-                    hour = int((row[hh_idx] if hh_idx < len(row) else "0").strip() or "0")
-                    minute = int((row[mm_idx] if mm_idx < len(row) else "0").strip() or "0")
+                    hour_raw = (row[hh_idx] if hh_idx < len(row) else "0")
+                    minute_raw = (row[mm_idx] if mm_idx < len(row) else "0")
                     rnd = int((row[9] or "0").strip() or "0")
                     dur = int((row[10] or "0").strip() or "0")
                     text = (row[11] or "").strip()
                     action = (row[12] or "").strip()
                     data = (row[13] or "").strip()
-                    e = ScheduleEntry(m, tu, w, th, fr, sa, su, hour, minute, rnd, dur, text, action, data)
-                    print(f"[DEBUG] Adding scheduled action: {e}")
-                    entries.append(e)
-                    flags = [m, tu, w, th, fr, sa, su]
-                    for wd, flag in enumerate(flags):  # Monday=0 .. Sunday=6
-                        if flag:
-                            by_wd[wd].append(e)
+
+                    hours = _parse_time_field(hour_raw, 23, "hour")
+                    minutes = _parse_time_field(minute_raw, 59, "minute")
+
+                    for hour in hours:
+                        for minute in minutes:
+                            e = ScheduleEntry(
+                                m,
+                                tu,
+                                w,
+                                th,
+                                fr,
+                                sa,
+                                su,
+                                hour,
+                                minute,
+                                rnd,
+                                dur,
+                                text,
+                                action,
+                                data,
+                                hour_expr=hour_raw.strip(),
+                                minute_expr=minute_raw.strip(),
+                            )
+                            print(f"[DEBUG] Adding scheduled action: {e}")
+                            entries.append(e)
+                            flags = [m, tu, w, th, fr, sa, su]
+                            for wd, flag in enumerate(flags):  # Monday=0 .. Sunday=6
+                                if flag:
+                                    by_wd[wd].append(e)
                 except Exception as ex:
                     print(f"[ERROR] Row {row_num} parse error: {ex} | {row}")
     except Exception as ex:
@@ -138,15 +186,52 @@ def load_actions_script() -> Dict[str, List[Dict[str, str]]]:
         print(f"[ERROR] Failed reading script.json: {ex}")
         return {}
 
+# -------------------------- Config support --------------------------
+
+def _resolve_config_path() -> str:
+    return os.path.join(os.path.dirname(__file__), "lps.rc")
+
+def load_config() -> Dict[str, str]:
+    path = _resolve_config_path()
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            if isinstance(data, dict):
+                print(f"[DEBUG] Loaded config from {path}")
+                return data
+    except Exception as ex:
+        print(f"[WARN] Failed reading config {path}: {ex}")
+    return {}
+
+def save_config(data: Dict[str, str]) -> None:
+    path = _resolve_config_path()
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, sort_keys=True)
+        print(f"[INFO] Saved config to {path}")
+    except Exception as ex:
+        print(f"[ERROR] Failed writing config {path}: {ex}")
+
 # -------------------------- GStreamer init --------------------------
 
 Gst.init(None)
 
 # Fallback if the hour-mapped file doesn't exist
-FALLBACK_PATH = "/home/tme520/Videos/LPS/R/c10 - cheeky curious.mp4"
+FALLBACK_PATH = "/home/tme520/Videos/LPS/moves/c10 - sitting 1.mp4"
+WEEKDAY_NAMES = [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+]
 
 def path_for_hour(hour: int) -> str:
-    base_dir = "/home/tme520/Videos/LPS/H"
+    base_dir = "/home/tme520/Videos/LPS/announcements/FR"
     candidate = os.path.join(base_dir, f"c10 - {hour:02d}h.mp4")
     return candidate if os.path.exists(candidate) else FALLBACK_PATH
 
@@ -164,12 +249,15 @@ class FullscreenPlayer(Gtk.Window):
         self.schedule, self.schedule_by_weekday = load_schedule()
         print(f"[DEBUG] schedule: {self.schedule}")
         self.actions_script = load_actions_script()
+        self.config = load_config()
+        self.selected_language = self.config.get("language", "English")
 
         # Day roll state (for random offsets + fired flags)
         self._today_key = datetime.now().date()
         self._today_offsets: Dict[int, int] = {}      # idx -> minutes
         self._today_fired: Dict[int, bool] = {}       # idx -> fired
         self._seed_today_offsets()
+        self._last_day_greeting_date = self._today_key
 
         # Playback queue and state
         self.play_queue: List[str] = []
@@ -197,8 +285,21 @@ class FullscreenPlayer(Gtk.Window):
 
         # GStreamer pipeline
         self.pipe = Gst.ElementFactory.make("playbin", None)
+        self.video_filter = Gst.parse_bin_from_description(
+            "videoscale add-borders=false ! videoconvert ! alpha alpha=1.0 ! videoconvert",
+            True,
+        )
+        self.pipe.set_property("video-filter", self.video_filter)
         self.video_widget = None
         self.using_overlay = False
+
+        # Whenever playbin swaps out the video sink (e.g. when auto-plugging
+        # decoders), force our preferred background colour again so we never
+        # flash the default black bars.
+        try:
+            self.pipe.connect("notify::video-sink", self._on_video_sink_changed)
+        except Exception:
+            pass
 
         gtk_sink = Gst.ElementFactory.make("gtksink", None)
         if gtk_sink:
@@ -209,6 +310,9 @@ class FullscreenPlayer(Gtk.Window):
             self.video_widget.set_hexpand(True)
             self.video_widget.set_vexpand(True)
             self.overlay.add(self.video_widget)
+            # Ensure the widget paints a white background so any letterboxing
+            # performed by the sink blends in with the desired colour.
+            self._update_widget_background(self.video_widget, "white")
         else:
             self.da = Gtk.DrawingArea()
             self.da.set_hexpand(True)
@@ -219,14 +323,23 @@ class FullscreenPlayer(Gtk.Window):
             for name in ("waylandsink", "glimagesink", "autovideosink", "ximagesink"):
                 s = Gst.ElementFactory.make(name, None)
                 if s: sink = s; break
-            if sink and sink.find_property("force-aspect-ratio"):
-                sink.set_property("force-aspect-ratio", False)
-            if sink and sink.find_property("fullscreen"):
-                try: sink.set_property("fullscreen", True)
-                except Exception: pass
+            if sink:
+                if sink.find_property("force-aspect-ratio"):
+                    sink.set_property("force-aspect-ratio", False)
+                if sink.find_property("add-borders"):
+                    try:
+                        sink.set_property("add-borders", False)
+                    except Exception:
+                        pass
+                if sink.find_property("fullscreen"):
+                    try: sink.set_property("fullscreen", True)
+                    except Exception: pass
             self.pipe.set_property("video-sink", sink)
             self.using_overlay = True
             self.da.connect("realize", self.on_da_realize)
+            self._update_widget_background(self.da, "white")
+
+        self._set_video_overlay_background("white")
 
         # Clock label
         self.clock_label = Gtk.Label()
@@ -280,8 +393,17 @@ class FullscreenPlayer(Gtk.Window):
             "    border-radius: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.8);",
             "}",
             ".schedule-panel { background-color: rgba(0,0,0,0.45); border-radius: 10px; padding: 8px; }",
-            "GtkWindow.window-idle, GtkOverlay.window-idle { background-color: black; }",
-            "GtkWindow.window-playing, GtkOverlay.window-playing { background-color: white; }",
+            ".calendar-panel { background-color: rgba(0,0,0,0.45); border-radius: 10px; padding: 12px 16px; }",
+            "#calendar-title { font-size: 16pt; font-weight: 600; color: white; margin-bottom: 6px; }",
+            ".calendar-day-label { font-size: 12pt; color: white; padding: 4px 6px; border-radius: 6px; }",
+            ".calendar-day-today { background-color: rgba(255,255,255,0.25); color: black; font-weight: 700; }",
+            ".config-panel { background-color: rgba(0,0,0,0.7); border-radius: 12px; padding: 20px 28px; }",
+            "#config-title { font-size: 20pt; font-weight: 700; color: white; margin-bottom: 8px; }",
+            ".config-section-title { font-size: 14pt; font-weight: 600; color: white; }",
+            ".config-option { font-size: 12pt; color: white; }",
+            ".config-save-button { font-size: 12pt; font-weight: 700; padding: 8px 16px; }",
+            "GtkWindow { background-color: black; }",
+            "GtkOverlay { background-color: transparent; }",
         ]
 
         if bg_uri:
@@ -309,7 +431,12 @@ class FullscreenPlayer(Gtk.Window):
 
         # Schedule view (for visibility / debugging)
         self.build_schedule_view()
+        self.build_calendar_view()
+        self.build_config_view()
+        self.config_visible = False
+        self.config_box.hide()
         self.populate_schedule_view()
+        self.update_calendar()
         self.highlight_next_upcoming()
         GLib.timeout_add_seconds(60, self._periodic_highlight)
 
@@ -349,6 +476,7 @@ class FullscreenPlayer(Gtk.Window):
         # Action executor state
         self._action_running = False
         self._current_action_name = None
+        self._manual_action_last_trigger: Dict[str, datetime] = {}
         self._step_timer_source = None
 
     # -------------------------- UI helpers --------------------------
@@ -378,18 +506,103 @@ class FullscreenPlayer(Gtk.Window):
             return False
         self.toast_hide_source = GLib.timeout_add_seconds(seconds, _hide)
 
+    # -------------------------- Config view --------------------------
+
+    def build_config_view(self):
+        self.config_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        self.config_box.get_style_context().add_class("config-panel")
+        self.config_box.set_halign(Gtk.Align.CENTER)
+        self.config_box.set_valign(Gtk.Align.CENTER)
+
+        title = Gtk.Label(label="Configuration")
+        title.set_name("config-title")
+        title.set_halign(Gtk.Align.CENTER)
+        self.config_box.pack_start(title, False, False, 0)
+
+        language_label = Gtk.Label(label="Language")
+        language_label.get_style_context().add_class("config-section-title")
+        language_label.set_halign(Gtk.Align.START)
+        self.config_box.pack_start(language_label, False, False, 0)
+
+        language_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        language_box.set_halign(Gtk.Align.CENTER)
+        self.language_en_button = Gtk.RadioButton.new_with_label_from_widget(None, "English")
+        self.language_fr_button = Gtk.RadioButton.new_with_label_from_widget(self.language_en_button, "French")
+        self.language_en_button.get_style_context().add_class("config-option")
+        self.language_fr_button.get_style_context().add_class("config-option")
+        self.language_en_button.connect("toggled", self.on_language_toggled, "English")
+        self.language_fr_button.connect("toggled", self.on_language_toggled, "French")
+        if self.selected_language == "French":
+            self.language_fr_button.set_active(True)
+        else:
+            self.language_en_button.set_active(True)
+        language_box.pack_start(self.language_en_button, False, False, 0)
+        language_box.pack_start(self.language_fr_button, False, False, 0)
+        self.config_box.pack_start(language_box, False, False, 0)
+
+        save_button = Gtk.Button(label="Save")
+        save_button.get_style_context().add_class("config-save-button")
+        save_button.set_halign(Gtk.Align.CENTER)
+        save_button.connect("clicked", self.on_save_config)
+        self.config_box.pack_start(save_button, False, False, 8)
+
+        self.overlay.add_overlay(self.config_box)
+        try:
+            self.overlay.set_overlay_pass_through(self.config_box, False)
+        except Exception:
+            pass
+        self.config_box.hide()
+        self.config_visible = False
+
+    def on_language_toggled(self, button, language: str):
+        if button.get_active():
+            self.selected_language = language
+
+    def on_save_config(self, _button):
+        save_config({"language": self.selected_language})
+        self.show_toast("Configuration saved")
+
+    def toggle_config_visibility(self):
+        currently_visible = self.config_box.get_visible()
+        if currently_visible:
+            self.config_box.hide()
+            self.config_visible = False
+        else:
+            self.config_box.show_all()
+            self.config_visible = True
+
+    def hide_config_if_visible(self):
+        if self.config_box.get_visible():
+            self.config_box.hide()
+            self.config_visible = False
+
     def _set_window_background_color(self, rgba):
-        """Apply the requested background colour to the window and key child widgets."""
-        targets = []
-        if hasattr(self, "video_widget") and self.video_widget is not None:
-            targets.append(self.video_widget)
-        if hasattr(self, "da") and self.da is not None:
-            targets.append(self.da)
-        for widget in targets:
+        """Update the window/overlay background colour while keeping the video surface white."""
+
+        def _apply(widget, target_rgba):
+            if widget is None:
+                return
             try:
-                widget.override_background_color(Gtk.StateFlags.NORMAL, rgba)
+                for state in (
+                    Gtk.StateFlags.NORMAL,
+                    Gtk.StateFlags.ACTIVE,
+                    Gtk.StateFlags.PRELIGHT,
+                    Gtk.StateFlags.SELECTED,
+                    Gtk.StateFlags.INSENSITIVE,
+                ):
+                    widget.override_background_color(state, target_rgba)
             except Exception:
-                continue
+                pass
+
+        # Main window / overlay background -> requested colour
+        _apply(self, rgba)
+        if hasattr(self, "overlay") and self.overlay is not None:
+            _apply(self.overlay, rgba)
+
+        # Video surfaces -> always white so letterboxing matches the video content
+        white = getattr(self, "_white_rgba", None)
+        for widget in (getattr(self, "video_widget", None), getattr(self, "da", None)):
+            _apply(widget, white or rgba)
 
     def _update_background_state(self, playing: bool):
         widgets = [self]
@@ -413,6 +626,105 @@ class FullscreenPlayer(Gtk.Window):
                 ctx.remove_class("window-playing")
                 ctx.add_class("window-idle")
 
+    def _set_video_overlay_background(self, color_spec: str):
+        """Attempt to update the background color used by the video sink when letterboxed."""
+        try:
+            sink = self.pipe.get_property("video-sink")
+        except Exception:
+            sink = None
+        if not sink:
+            self._update_widget_background(self.video_widget or getattr(self, "da", None), color_spec)
+            return
+
+        rgba = self._parse_rgba(color_spec)
+        color_int = 0xFF000000
+        if color_spec.lower() == "white":
+            color_int = 0xFFFFFFFF
+        elif color_spec.lower() == "black":
+            color_int = 0xFF000000
+
+        def apply_color(element) -> bool:
+            if element is None:
+                return False
+            try:
+                if isinstance(element, GstVideo.VideoOverlay):
+                    element.set_background_color(color_int)
+                    return True
+            except Exception:
+                pass
+            try:
+                if hasattr(element, "set_background_color"):
+                    element.set_background_color(color_int)
+                    return True
+            except Exception:
+                pass
+            try:
+                if hasattr(element, "find_property") and element.find_property("background-color"):
+                    try:
+                        element.set_property("background-color", rgba)
+                    except TypeError:
+                        element.set_property("background-color", color_int)
+                    return True
+            except Exception:
+                pass
+            return False
+
+        elements_to_try = [sink]
+        if isinstance(sink, Gst.Bin):
+            try:
+                itr = sink.iterate_recurse()
+                while True:
+                    res, element = itr.next()
+                    if res == Gst.IteratorResult.OK:
+                        elements_to_try.append(element)
+                    elif res == Gst.IteratorResult.RESYNC:
+                        itr = sink.iterate_recurse()
+                    else:
+                        break
+            except Exception:
+                pass
+
+        for element in elements_to_try:
+            if apply_color(element):
+                self._update_widget_background(self.video_widget or getattr(self, "da", None), color_spec)
+                break
+        else:
+            self._update_widget_background(self.video_widget or getattr(self, "da", None), color_spec)
+
+    def _update_widget_background(self, widget, color_spec: str):
+        if widget is None:
+            return
+        rgba = self._parse_rgba(color_spec)
+        try:
+            for state in (
+                Gtk.StateFlags.NORMAL,
+                Gtk.StateFlags.ACTIVE,
+                Gtk.StateFlags.PRELIGHT,
+                Gtk.StateFlags.SELECTED,
+                Gtk.StateFlags.INSENSITIVE,
+            ):
+                widget.override_background_color(state, rgba)
+        except Exception:
+            pass
+        try:
+            ctx = widget.get_style_context()
+            if ctx:
+                css = f".video-background-fixed {{ background-color: {color_spec}; }}"
+                provider = Gtk.CssProvider()
+                provider.load_from_data(css.encode("utf-8"))
+                ctx.add_class("video-background-fixed")
+                Gtk.StyleContext.add_provider(
+                    ctx,
+                    provider,
+                    Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+                )
+        except Exception:
+            pass
+
+    def _on_video_sink_changed(self, *_):
+        # Apply asynchronously to ensure the newly-created sink is ready.
+        GLib.idle_add(self._set_video_overlay_background, "white")
+
     def _parse_rgba(self, color_spec: str) -> Gdk.RGBA:
         rgba = Gdk.RGBA()
         if not rgba.parse(color_spec):
@@ -424,12 +736,14 @@ class FullscreenPlayer(Gtk.Window):
     def _on_playback_started(self):
         self._update_background_state(True)
         self._set_window_background_color(self._white_rgba)
+        self._set_video_overlay_background("white")
         if hasattr(self, "schedule_box"):
             self.schedule_box.hide()
 
     def _on_playback_stopped(self):
         self._update_background_state(False)
         self._set_window_background_color(self._black_rgba)
+        self._set_video_overlay_background("white")
         if hasattr(self, "schedule_box"):
             if getattr(self, "schedule_visible", True):
                 self.schedule_box.show_all()
@@ -539,6 +853,7 @@ class FullscreenPlayer(Gtk.Window):
         except Exception:
             return
         if new_state == Gst.State.PLAYING:
+            self.hide_config_if_visible()
             self._update_background_state(True)
             self._set_window_background_color(self._white_rgba)
         elif new_state in (Gst.State.NULL, Gst.State.READY, Gst.State.PAUSED):
@@ -560,12 +875,30 @@ class FullscreenPlayer(Gtk.Window):
             self.schedule, self.schedule_by_weekday = load_schedule()
             self.populate_schedule_view()
             self._seed_today_offsets(force=True)
+        elif event.keyval in (Gdk.KEY_c, Gdk.KEY_C):
+            print("[DEBUG] C key pressed")
+            self.toggle_config_visibility()
         elif event.keyval in (Gdk.KEY_a, Gdk.KEY_A):
             # Quick manual test: run test action if present
             print("[DEBUG] A key pressed")
-            self.run_action("ACT_TEST_TIME_WEEKDAY")
+            self._play_manual_action_once("ACT_A_KEY_ACTION")
         self.highlight_next_upcoming()
         GLib.timeout_add_seconds(60, self._periodic_highlight)
+
+    def _play_manual_action_once(self, action_name: str):
+        """Trigger a manual action while ignoring rapid repeat events."""
+        now = datetime.now()
+        last_trigger = self._manual_action_last_trigger.get(action_name)
+        if last_trigger and (now - last_trigger) < timedelta(seconds=1):
+            print(f"[DEBUG] Ignoring repeat trigger for {action_name}")
+            return
+
+        if self._action_running and self._current_action_name == action_name:
+            print(f"[DEBUG] {action_name} already running; ignoring manual trigger")
+            return
+
+        self._manual_action_last_trigger[action_name] = now
+        self.run_action(action_name)
 
     # -------------------------- Clock + Hour change + Scheduler tick --------------------------
 
@@ -577,6 +910,8 @@ class FullscreenPlayer(Gtk.Window):
             print("[INFO] New day")
             self._today_key = now.date()
             self._seed_today_offsets(force=True)
+            self.enqueue_day_greeting(now)
+            self.update_calendar()
 
         # Hour change trigger: enqueue instead of interrupt
         if now.hour != self.last_seen_hour:
@@ -598,21 +933,71 @@ class FullscreenPlayer(Gtk.Window):
     # -------------------------- Startup sequence --------------------------
 
     def enqueue_startup_sequence(self):
-        base_dir = "/home/tme520/Videos/LPS/R"
-        hello = os.path.join(base_dir, "c10 - wave hello.mp4")
+        base_dir_wave = "/home/tme520/Videos/LPS/moves"
+        hello = os.path.join(base_dir_wave, "c10 - wave hello 3.mp4")
+        base_dir_nice = "/home/tme520/Videos/LPS/announcements/FR"
+        base_dir_announcements = "/home/tme520/Videos/LPS/announcements"
+        locale = "FR" if self.selected_language == "French" else "EN"
+        startup_enqueued = []
         if os.path.exists(hello):
             self.enqueue_file(hello)
-        # Optional “nice {weekday}”
-        names = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"]
+            startup_enqueued.append(hello)
+        # Optional “good {weekday}”
         try:
-            wd = datetime.now().weekday()
+            now = datetime.now()
+            wd = now.weekday()
+            day_of_month = now.day
             print(f"[INFO] Day of the week: {wd}")
         except Exception:
             wd = 0
-        daymsg = os.path.join(base_dir, f"c10 - nice {names[wd]}.mp4")
+            day_of_month = 1
+
+        daymsg = os.path.join(base_dir_nice, f"c10 - good {WEEKDAY_NAMES[wd]}.mp4")
         if os.path.exists(daymsg):
             self.enqueue_file(daymsg)
-        print(f"[Startup] Enqueued: {[p for p in [hello, daymsg] if p and os.path.exists(p)]}")
+            startup_enqueued.append(daymsg)
+
+        # Optional day-of-month announcement (does not replace weekday greeting)
+        day_of_month_msg = os.path.join(
+            base_dir_announcements,
+            f"c10 - day {day_of_month}.mp4",
+        )
+        if os.path.exists(day_of_month_msg):
+            self.enqueue_file(day_of_month_msg)
+            startup_enqueued.append(day_of_month_msg)
+
+            month_name = calendar.month_name[now.month].lower()
+            month_msg = os.path.join(
+                base_dir_announcements,
+                locale,
+                f"c10 - {month_name}.mp4",
+            )
+            if os.path.exists(month_msg):
+                self.enqueue_file(month_msg)
+                startup_enqueued.append(month_msg)
+
+        print(f"[Startup] Enqueued: {startup_enqueued}")
+
+    def enqueue_day_greeting(self, now: Optional[datetime] = None):
+        now = now or datetime.now()
+        if self._last_day_greeting_date == now.date():
+            return
+
+        weekday_idx = now.weekday()
+        base_dir_nice = "/home/tme520/Videos/LPS/announcements/FR"
+        greeting_path = os.path.join(
+            base_dir_nice, f"c10 - good {WEEKDAY_NAMES[weekday_idx]}.mp4"
+        )
+
+        if os.path.exists(greeting_path):
+            print(f"[INFO] Enqueuing day greeting: {greeting_path}")
+            self.enqueue_file(greeting_path)
+        else:
+            print(
+                f"[WARN] Greeting video not found for {WEEKDAY_NAMES[weekday_idx]}: {greeting_path}"
+            )
+
+        self._last_day_greeting_date = now.date()
 
     # -------------------------- Schedule view --------------------------
 
@@ -673,6 +1058,76 @@ class FullscreenPlayer(Gtk.Window):
                 self.schedule_box.hide()
         else:
             self.schedule_box.hide()
+
+    def build_calendar_view(self):
+        self.calendar_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        self.calendar_box.get_style_context().add_class("calendar-panel")
+        self.calendar_box.set_halign(Gtk.Align.START)
+        self.calendar_box.set_valign(Gtk.Align.START)
+        self.calendar_box.set_margin_start(24)
+        self.calendar_box.set_margin_top(24)
+
+        self.calendar_title = Gtk.Label()
+        self.calendar_title.set_name("calendar-title")
+        self.calendar_title.set_halign(Gtk.Align.CENTER)
+        self.calendar_box.pack_start(self.calendar_title, False, False, 0)
+
+        self.calendar_grid = Gtk.Grid()
+        self.calendar_grid.set_column_spacing(8)
+        self.calendar_grid.set_row_spacing(4)
+        self.calendar_box.pack_start(self.calendar_grid, True, True, 0)
+
+        self.overlay.add_overlay(self.calendar_box)
+        self.calendar_box.show_all()
+        self._calendar_day_labels: Dict[int, Gtk.Label] = {}
+        self._calendar_month = None
+
+    def update_calendar(self):
+        now = datetime.now()
+        month_key = (now.year, now.month)
+        if getattr(self, "_calendar_month", None) == month_key:
+            # Only update the highlight
+            self._update_calendar_highlight(now.day)
+            return
+
+        self._calendar_month = month_key
+        cal = calendar.Calendar(firstweekday=0)
+        month_matrix = cal.monthdayscalendar(now.year, now.month)
+        for child in list(self.calendar_grid.get_children()):
+            self.calendar_grid.remove(child)
+        self._calendar_day_labels.clear()
+
+        self.calendar_title.set_text(f"{calendar.month_name[now.month]} {now.year}")
+
+        weekday_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        for col, day_name in enumerate(weekday_names):
+            header = Gtk.Label(label=day_name)
+            header.get_style_context().add_class("calendar-day-label")
+            header.set_halign(Gtk.Align.CENTER)
+            header.set_valign(Gtk.Align.CENTER)
+            self.calendar_grid.attach(header, col, 0, 1, 1)
+
+        for row, week in enumerate(month_matrix, start=1):
+            for col, day in enumerate(week):
+                label_text = "" if day == 0 else str(day)
+                day_label = Gtk.Label(label=label_text)
+                day_label.get_style_context().add_class("calendar-day-label")
+                day_label.set_halign(Gtk.Align.CENTER)
+                day_label.set_valign(Gtk.Align.CENTER)
+                self.calendar_grid.attach(day_label, col, row, 1, 1)
+                if day:
+                    self._calendar_day_labels[day] = day_label
+
+        self.calendar_box.show_all()
+        self._update_calendar_highlight(now.day)
+
+    def _update_calendar_highlight(self, current_day: int):
+        for day, label in self._calendar_day_labels.items():
+            ctx = label.get_style_context()
+            if day == current_day:
+                ctx.add_class("calendar-day-today")
+            else:
+                ctx.remove_class("calendar-day-today")
 
     def populate_schedule_view(self):
         if not hasattr(self, "schedule_store"):
