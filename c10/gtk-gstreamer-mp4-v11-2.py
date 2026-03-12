@@ -262,6 +262,7 @@ class FullscreenPlayer(Gtk.Window):
         if os.path.exists(bg_path):
             try:
                 bg_uri = GLib.filename_to_uri(bg_path, None)
+                print(f"[DEBUG] Loaded PNG background {bg_path}")
             except Exception as ex:
                 print(f"[WARN] Failed to create URI for background image: {ex}")
         else:
