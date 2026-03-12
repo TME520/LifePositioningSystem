@@ -5,15 +5,6 @@
         {"Play-Random": "/home/tme520/Videos/LPS/c18 - eating [1..2].mp4"},
         {"Play-Random": "/home/tme520/Videos/LPS/c18 - drinking [1..2].mp4"}
     ],
-    "ACT_GOTO_SCHOOL_WEEKDAYS": [
-        {"Play": "/home/tme520/Videos/LPS/c18 - school time.mp4"},
-        {"Play": "/home/tme520/Videos/LPS/study/c18 - goto school.mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - uniform [1..5].mp4"},
-        {"Toast-Message": "Cathy is walking to school"},
-        {"Wait": "25 minutes"},
-        {"Play": "/home/tme520/Videos/LPS/study/c18 - arrive school.mp4"},
-        {"Toast-Message": "Cathy arrives at school"}
-    ],
     "ACT_DAILY_PRAYER_MON-SAT": [
         {"Play-Random": "/home/tme520/Videos/LPS/c18 - pray [1..2].mp4"},
         {"Toast-Message": "Cathy is praying for you"}
@@ -23,51 +14,6 @@
         {"Toast-Message": "It is lunch time"},
         {"Play-Random": "/home/tme520/Videos/LPS/c18 - eating [1..2].mp4"},
         {"Play-Random": "/home/tme520/Videos/LPS/c18 - drinking [1..2].mp4"}
-    ],
-    "ACT_GOTO_HOME_WEEKDAYS": [
-        {"Toast-Message": "Cathy is leaving school"},
-        {"Wait": "25 minutes"},
-        {"Toast-Message": "Cathy is back at home"}
-    ],
-    "ACT_SHOWER_WEEKDAYS": [
-        {"Play": "/home/tme520/Videos/LPS/c18 - shower time.mp4"},
-        {"Toast-Message": "Time for a shower"}
-    ],
-    "ACT_SINGING_LESSON_WEEKDAYS": [
-        {"Play": "/home/tme520/Videos/LPS/c18 - singing time.mp4"},
-        {"Play": "/home/tme520/Videos/LPS/c18 - portal piano.mp4"},
-        {"Toast-Message": "Cathy is practicing singing"},
-        {"Wait": "45 minutes"},
-        {"Toast-Message": "Cathy is back at home"}
-    ],
-    "ACT_BALLET_LESSON_WEEKDAYS": [
-        {"Play": "/home/tme520/Videos/LPS/c18 - ballet time.mp4"},
-        {"Play": "/home/tme520/Videos/LPS/c18 - ballet.mp4"},
-        {"Toast-Message": "Cathy is practicing dancing"},
-        {"Wait": "45 minutes"},
-        {"Toast-Message": "Cathy is back at home"}
-    ],
-    "ACT_PIANO_LESSON_WEEKDAYS": [
-        {"Play": "/home/tme520/Videos/LPS/c18 - piano time.mp4"},
-        {"Play": "/home/tme520/Videos/LPS/c18 - portal piano.mp4"},
-        {"Toast-Message": "Cathy is learning piano"},
-        {"Wait": "45 minutes"},
-        {"Toast-Message": "Cathy is back at home"}
-    ],
-    "ACT_MANDARIN_LESSON_WEEKDAYS": [
-        {"Play": "/home/tme520/Videos/LPS/c18 - mandarin time.mp4"},
-        {"Play": "/home/tme520/Videos/LPS/c18 - portal study.mp4"},
-        {"Toast-Message": "Cathy is learning Mandarin"},
-        {"Wait": "45 minutes"},
-        {"Toast-Message": "Cathy is back at home"}
-    ],
-    "ACT_SWIMMING_LESSON_WEEKDAYS": [
-        {"Play": "/home/tme520/Videos/LPS/c18 - swimming time.mp4"},
-        {"Play": "/home/tme520/Videos/LPS/c18 - portal swimming pool.mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - swimsuit [1..6].mp4"},
-        {"Toast-Message": "Cathy is learning how to swim"},
-        {"Wait": "45 minutes"},
-        {"Toast-Message": "Cathy is back at home"}
     ],
     "ACT_DINNER_WEEKDAYS": [
         {"Play": "/home/tme520/Videos/LPS/c18 - dinner time.mp4"},
@@ -81,64 +27,31 @@
         {"Play-Random": "/home/tme520/Videos/LPS/c18 - pyjamas [1..13].mp4"},
         {"Play-Random": "/home/tme520/Videos/LPS/c18 - sleep [1..7].mp4"}
     ],
-    "ACT_TENNIS_LESSON_WEEKEND": [
-        {"Play": "/home/tme520/Videos/LPS/c18 - tennis time.mp4"},
-        {"Play": "/home/tme520/Videos/LPS/c18 - prep tennis.mp4"},
-        {"Play": "/home/tme520/Videos/LPS/c18 - portal tennis.mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - tennis [1..2].mp4"},
-        {"Toast-Message": "Cathy is playing tennis"},
-        {"Wait": "45 minutes"},
-        {"Toast-Message": "Cathy is back at home"}
-    ],
-    "ACT_MASS_SUNDAY": [
-        {"Play": "/home/tme520/Videos/LPS/c18 - church time.mp4"},
-        {"Play": "/home/tme520/Videos/LPS/c18 - portal church.mp4"},
-        {"Play": "/home/tme520/Videos/LPS/c18 - goto church.mp4"},
-        {"Play": "/home/tme520/Videos/LPS/c18 - arrive church.mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - pray [1..2].mp4"},
-        {"Toast-Message": "Cathy is at Sunday mass"},
-        {"Wait": "45 minutes"},
-        {"Toast-Message": "Cathy is back at home"}
-    ],
-    "ACT_SHOWER_WEEKEND": [
-        {"Play": "/home/tme520/Videos/LPS/c18 - shower time.mp4"},
-        {"Toast-Message": "Time for a shower"}
-    ],
     "ACT_BEDTIME_WEEKEND": [
         {"Play": "/home/tme520/Videos/LPS/c18 - bedtime.mp4"},
         {"Toast-Message": "It is time to go sleep"},
         {"Play-Random": "/home/tme520/Videos/LPS/c18 - pyjamas [1..13].mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - sleep [1..7].mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - magic [1..14].mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - magic [15..29].mp4"}
+        {"Play-Random": "/home/tme520/Videos/LPS/c18 - sleep [1..7].mp4"}
     ],
     "ACT_GOOD_WEEK": [
-        {"Play": "/home/tme520/Videos/LPS/c18 - nice week.mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - bouquet [1..10].mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - magic [1..14].mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - magic [15..29].mp4"}
+        {"Play": "/home/tme520/Videos/LPS/c18 - good week.mp4"}
     ],
     "ACT_GOOD_WEEKEND": [
-        {"Play": "/home/tme520/Videos/LPS/c18 - good weekend.mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - bouquet [1..10].mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - magic [1..14].mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - magic [15..29].mp4"}
+        {"Play": "/home/tme520/Videos/LPS/c18 - good weekend.mp4"}
+    ],
+    "ACT_GOOD_MORNING": [
+        {"Play-Random": "/home/tme520/Videos/LPS/c18 - good morning [1..2].mp4"}
     ],
     "ACT_GOOD_AFTERNOON": [
-        {"Play": "/home/tme520/Videos/LPS/c18 - good afternoon.mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - bouquet [1..10].mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - magic [1..14].mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - magic [15..29].mp4"}
+        {"Play": "/home/tme520/Videos/LPS/c18 - good afternoon.mp4"}
     ],
     "ACT_GOOD_EVENING": [
-        {"Play": "/home/tme520/Videos/LPS/c18 - good evening.mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - bouquet [1..10].mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - magic [1..14].mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - magic [15..29].mp4"}
+        {"Play": "/home/tme520/Videos/LPS/c18 - good evening.mp4"}
+    ],
+    "ACT_GOOD_NIGHT": [
+        {"Play": "/home/tme520/Videos/LPS/c18 - good night.mp4"}
     ],
     "ACT_A_KEY_ACTION": [
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - friends [1..15].mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - magic [1..29].mp4"},
-        {"Play-Random": "/home/tme520/Videos/LPS/c18 - nap [1..2].mp4"}
+        {"Play-Random": "/home/tme520/Videos/LPS/c18 - friends [1..8].mp4"}
     ]
 }
