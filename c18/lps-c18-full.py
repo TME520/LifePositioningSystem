@@ -956,6 +956,7 @@ class FullscreenPlayer(Gtk.Window):
             day_of_month = 1
 
         daymsg = os.path.join(base_dir_nice, f"c18 - good {WEEKDAY_NAMES[wd]}.mp4")
+        print(f'daymsg: {daymsg}')
         if os.path.exists(daymsg):
             self.enqueue_file(daymsg)
             startup_enqueued.append(daymsg)
@@ -964,8 +965,9 @@ class FullscreenPlayer(Gtk.Window):
         day_of_month_variant = random.randint(1, 9)
         day_of_month_msg = os.path.join(
             base_dir_announcements,
-            f"c18 - {day_of_month} {day_of_month_variant}.mp4",
+            f"c18 - day {day_of_month}.mp4",
         )
+        print(f'day_of_month_msg: {day_of_month_msg}')
         if os.path.exists(day_of_month_msg):
             self.enqueue_file(day_of_month_msg)
             startup_enqueued.append(day_of_month_msg)
@@ -976,6 +978,7 @@ class FullscreenPlayer(Gtk.Window):
                 base_dir_announcements,
                 f"c18 - {month_name} {month_variant}.mp4",
             )
+            print(f'month_msg: {month_msg}')
             if os.path.exists(month_msg):
                 self.enqueue_file(month_msg)
                 startup_enqueued.append(month_msg)
