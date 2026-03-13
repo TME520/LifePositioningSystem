@@ -934,7 +934,10 @@ class FullscreenPlayer(Gtk.Window):
 
     def enqueue_startup_sequence(self):
         base_dir_wave = "/home/tme520/Videos/LPS/c18"
-        hello = os.path.join(base_dir_wave, "c18 - wave hello 3.mp4")
+        hello = os.path.join(
+            base_dir_wave,
+            f"c18 - wave hello {random.randint(1, 9)}.mp4",
+        )
         base_dir_nice = "/home/tme520/Videos/LPS/c18"
         base_dir_announcements = "/home/tme520/Videos/LPS/c18"
         locale = "FR" if self.selected_language == "French" else "EN"
