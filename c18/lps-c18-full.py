@@ -961,9 +961,10 @@ class FullscreenPlayer(Gtk.Window):
             startup_enqueued.append(daymsg)
 
         # Optional day-of-month announcement (does not replace weekday greeting)
+        day_of_month_variant = random.randint(1, 9)
         day_of_month_msg = os.path.join(
             base_dir_announcements,
-            f"c18 - {day_of_month}.mp4",
+            f"c18 - {day_of_month} {day_of_month_variant}.mp4",
         )
         if os.path.exists(day_of_month_msg):
             self.enqueue_file(day_of_month_msg)
