@@ -879,9 +879,11 @@ class FullscreenPlayer(Gtk.Window):
             print("[DEBUG] C key pressed")
             self.toggle_config_visibility()
         elif event.keyval in (Gdk.KEY_a, Gdk.KEY_A):
-            # Quick manual test: run test action if present
             print("[DEBUG] A key pressed")
-            self._play_manual_action_once("ACT_A_KEY_ACTION")
+            if datetime.now().weekday() == 6:  # Sunday
+                self._play_manual_action_once("ACT_A_KEY_ACTION_BIBLE")
+            else:
+                self._play_manual_action_once("ACT_A_KEY_ACTION")
         self.highlight_next_upcoming()
         GLib.timeout_add_seconds(60, self._periodic_highlight)
 
