@@ -369,6 +369,20 @@ class FullscreenPlayer(Gtk.Window):
             pass
         self.toast_hide_source = None
 
+        # Bible action number overlay
+        self.bible_number_label = Gtk.Label()
+        self.bible_number_label.set_name("bible-number-label")
+        self.bible_number_label.set_halign(Gtk.Align.CENTER)
+        self.bible_number_label.set_valign(Gtk.Align.CENTER)
+        self.overlay.add_overlay(self.bible_number_label)
+        try:
+            self.overlay.set_overlay_pass_through(self.bible_number_label, True)
+        except Exception:
+            pass
+        self.bible_number_label.hide()
+        self._bible_number_value: Optional[int] = None
+        self._bible_number_overlay_armed = False
+
         # CSS styling
         bg_path = os.path.join(os.path.dirname(__file__), "hk_bg_01.png")
         bg_uri = None
@@ -391,6 +405,11 @@ class FullscreenPlayer(Gtk.Window):
             "    font-size: 16pt; font-weight: 600; color: white;",
             "    padding: 8px 12px; background-color: rgba(0,0,0,0.55);",
             "    border-radius: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.8);",
+            "}",
+            "#bible-number-label {",
+            "    font-size: 120pt; font-weight: 800; color: white;",
+            "    padding: 12px 20px; background-color: rgba(0,0,0,0.35);",
+            "    border-radius: 16px; text-shadow: 0 2px 4px rgba(0,0,0,0.85);",
             "}",
             ".schedule-panel { background-color: rgba(0,0,0,0.45); border-radius: 10px; padding: 8px; }",
             ".calendar-panel { background-color: rgba(0,0,0,0.45); border-radius: 10px; padding: 12px 16px; }",
@@ -810,6 +829,7 @@ class FullscreenPlayer(Gtk.Window):
             return
         print(f"[INFO] Playing {path}")
         self._on_playback_started()
+        self._update_bible_number_overlay(path)
         self.show_video_layer()
         try: self.pipe.set_state(Gst.State.NULL)
         except Exception: pass
@@ -830,7 +850,22 @@ class FullscreenPlayer(Gtk.Window):
         try: self.pipe.set_state(Gst.State.NULL)
         except Exception: pass
         self.show_clock_only()
+        self._update_bible_number_overlay(None)
         self._on_playback_stopped()
+
+    def _update_bible_number_overlay(self, path: Optional[str]):
+        bible_file = "c18 - bible 4.mp4"
+        if (
+            path
+            and os.path.basename(path).lower() == bible_file
+            and self._bible_number_overlay_armed
+            and self._bible_number_value is not None
+        ):
+            self.bible_number_label.set_text(str(self._bible_number_value))
+            self.bible_number_label.show()
+            self._bible_number_overlay_armed = False
+            return
+        self.bible_number_label.hide()
 
     # -------------------------- GStreamer bus --------------------------
 
@@ -1246,6 +1281,10 @@ class FullscreenPlayer(Gtk.Window):
         if not steps:
             print(f"[Action] Unknown or empty action: {action_name}")
             return
+        if action_name == "ACT_A_KEY_ACTION_BIBLE":
+            self._bible_number_value = random.randint(1, 150)
+            self._bible_number_overlay_armed = True
+            print(f"[Action] Bible number selected: {self._bible_number_value}")
         if self._action_running:
             print(f"[Action] Already running {self._current_action_name}; queuing additional steps alongside.")
         self._action_running = True
