@@ -1284,7 +1284,7 @@ class FullscreenPlayer(Gtk.Window):
         if not steps:
             print(f"[Action] Unknown or empty action: {action_name}")
             return
-        if action_name == "ACT_A_KEY_ACTION_BIBLE" or action_name == "ACT_BIBLE_STUDY"":
+        if action_name == "ACT_A_KEY_ACTION_BIBLE" or action_name == "ACT_BIBLE_STUDY":
             self._bible_number_value = random.randint(1, 150)
             self._bible_number_overlay_armed = True
             print(f"[Action] Bible number selected: {self._bible_number_value}")
