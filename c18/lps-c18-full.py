@@ -919,6 +919,9 @@ class FullscreenPlayer(Gtk.Window):
                 self._play_manual_action_once("ACT_A_KEY_ACTION_BIBLE")
             else:
                 self._play_manual_action_once("ACT_A_KEY_ACTION")
+        elif event.keyval in (Gdk.KEY_b, Gdk.KEY_B):
+            print("[DEBUG] B key pressed")
+            self._play_manual_action_once("ACT_BIBLE_STUDY")
         self.highlight_next_upcoming()
         GLib.timeout_add_seconds(60, self._periodic_highlight)
 
@@ -1281,7 +1284,7 @@ class FullscreenPlayer(Gtk.Window):
         if not steps:
             print(f"[Action] Unknown or empty action: {action_name}")
             return
-        if action_name == "ACT_A_KEY_ACTION_BIBLE":
+        if action_name == "ACT_A_KEY_ACTION_BIBLE" or action_name == "ACT_BIBLE_STUDY"":
             self._bible_number_value = random.randint(1, 150)
             self._bible_number_overlay_armed = True
             print(f"[Action] Bible number selected: {self._bible_number_value}")
