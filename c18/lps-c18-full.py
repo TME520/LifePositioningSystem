@@ -220,6 +220,9 @@ Gst.init(None)
 
 # Fallback if the hour-mapped file doesn't exist
 FALLBACK_PATH = "/home/tme520/Videos/LPS/c18/c18 - sitting 1.mp4"
+VIDEO_BASE_DIR = "/home/tme520/Videos/LPS/c18"
+PROVERBS_MIN_NUMBER = 1
+PROVERBS_MAX_NUMBER = 32
 WEEKDAY_NAMES = [
     "monday",
     "tuesday",
@@ -231,9 +234,12 @@ WEEKDAY_NAMES = [
 ]
 
 def path_for_hour(hour: int) -> str:
-    base_dir = "/home/tme520/Videos/LPS/c18/"
-    candidate = os.path.join(base_dir, f"c18 - {hour:02d}h.mp4")
+    candidate = os.path.join(VIDEO_BASE_DIR, f"c18 - {hour:02d}h.mp4")
     return candidate if os.path.exists(candidate) else FALLBACK_PATH
+
+def path_for_random_proverbs() -> str:
+    proverb_number = random.randint(PROVERBS_MIN_NUMBER, PROVERBS_MAX_NUMBER)
+    return os.path.join(VIDEO_BASE_DIR, f"c18 - proverbs {proverb_number}.mp4")
 
 # -------------------------- Player Window --------------------------
 
@@ -262,6 +268,8 @@ class FullscreenPlayer(Gtk.Window):
         # Playback queue and state
         self.play_queue: List[str] = []
         self._playing: bool = False  # True when a video is currently playing
+        self.proverbs_mode_enabled = False
+        self._last_proverbs_play_minute: Optional[datetime] = None
 
         # Minimal window chrome
         self.set_decorated(False)
@@ -922,6 +930,9 @@ class FullscreenPlayer(Gtk.Window):
         elif event.keyval in (Gdk.KEY_b, Gdk.KEY_B):
             print("[DEBUG] B key pressed")
             self._play_manual_action_once("ACT_BIBLE_STUDY")
+        elif event.keyval in (Gdk.KEY_p, Gdk.KEY_P):
+            print("[DEBUG] P key pressed")
+            self.toggle_proverbs_mode()
         self.highlight_next_upcoming()
         GLib.timeout_add_seconds(60, self._periodic_highlight)
 
@@ -940,6 +951,48 @@ class FullscreenPlayer(Gtk.Window):
         self._manual_action_last_trigger[action_name] = now
         self.run_action(action_name)
 
+    def toggle_proverbs_mode(self):
+        self.proverbs_mode_enabled = not self.proverbs_mode_enabled
+        if self.proverbs_mode_enabled:
+            self._enable_proverbs_mode()
+        else:
+            self._disable_proverbs_mode()
+
+    def _enable_proverbs_mode(self):
+        print("[INFO] Bible Proverbs mode enabled")
+        self.play_queue.clear()
+        self._cancel_step_timer()
+        self._action_running = False
+        self._current_action_name = None
+        self._last_proverbs_play_minute = None
+        self.stop_to_clock()
+        self.show_toast("Bible Proverbs mode ON")
+        self._play_proverbs_video_if_needed(datetime.now(), force=True)
+
+    def _disable_proverbs_mode(self):
+        print("[INFO] Bible Proverbs mode disabled")
+        self.play_queue.clear()
+        self._last_proverbs_play_minute = None
+        self.stop_to_clock()
+        self.show_toast("Bible Proverbs mode OFF")
+
+    def _play_proverbs_video_if_needed(self, now: datetime, force: bool = False):
+        current_minute = now.replace(second=0, microsecond=0)
+        if not force and self._last_proverbs_play_minute == current_minute:
+            return
+        if self._playing:
+            return
+
+        proverb_path = path_for_random_proverbs()
+        if not os.path.exists(proverb_path):
+            print(f"[WARN] Proverbs video not found: {proverb_path}")
+            return
+
+        print(f"[INFO] Enqueuing Proverbs video: {proverb_path}")
+        self._last_proverbs_play_minute = current_minute
+        self.play_queue.clear()
+        self.enqueue_file(proverb_path)
+
     # -------------------------- Clock + Hour change + Scheduler tick --------------------------
 
     def tick(self):
@@ -950,17 +1003,22 @@ class FullscreenPlayer(Gtk.Window):
             print("[INFO] New day")
             self._today_key = now.date()
             self._seed_today_offsets(force=True)
-            self.enqueue_day_greeting(now)
+            if not self.proverbs_mode_enabled:
+                self.enqueue_day_greeting(now)
             self.update_calendar()
 
         # Hour change trigger: enqueue instead of interrupt
         if now.hour != self.last_seen_hour:
             print("[INFO] Change of hour")
             self.last_seen_hour = now.hour
-            self.enqueue_hour_video(now.hour)
+            if not self.proverbs_mode_enabled:
+                self.enqueue_hour_video(now.hour)
+
+        if self.proverbs_mode_enabled:
+            self._play_proverbs_video_if_needed(now)
+            return True
 
         # Check scheduled actions
-        # print("[DEBUG] Check scheduled actions (tick)")
         self._check_and_fire_scheduled(now)
         return True
 
@@ -1280,6 +1338,9 @@ class FullscreenPlayer(Gtk.Window):
     # -------------------------- Action runner --------------------------
 
     def run_action(self, action_name: str):
+        if self.proverbs_mode_enabled:
+            print(f"[Action] Ignoring {action_name} because Bible Proverbs mode is enabled")
+            return
         steps = self.actions_script.get(action_name)
         if not steps:
             print(f"[Action] Unknown or empty action: {action_name}")
