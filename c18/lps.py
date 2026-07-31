@@ -313,42 +313,22 @@ class FullscreenPlayer(Gtk.Window):
             pass
 
         gtk_sink = Gst.ElementFactory.make("gtksink", None)
-        if gtk_sink:
-            if gtk_sink.find_property("force-aspect-ratio"):
-                gtk_sink.set_property("force-aspect-ratio", False)
-            self.pipe.set_property("video-sink", gtk_sink)
-            self.video_widget = gtk_sink.props.widget
-            self.video_widget.set_hexpand(True)
-            self.video_widget.set_vexpand(True)
-            self.overlay.add(self.video_widget)
-            # Ensure the widget paints a white background so any letterboxing
-            # performed by the sink blends in with the desired colour.
-            self._update_widget_background(self.video_widget, "white")
-        else:
-            self.da = Gtk.DrawingArea()
-            self.da.set_hexpand(True)
-            self.da.set_vexpand(True)
-            self.da.set_size_request(geo.width, geo.height)
-            self.overlay.add(self.da)
-            sink = None
-            for name in ("waylandsink", "glimagesink", "autovideosink", "ximagesink"):
-                s = Gst.ElementFactory.make(name, None)
-                if s: sink = s; break
-            if sink:
-                if sink.find_property("force-aspect-ratio"):
-                    sink.set_property("force-aspect-ratio", False)
-                if sink.find_property("add-borders"):
-                    try:
-                        sink.set_property("add-borders", False)
-                    except Exception:
-                        pass
-                if sink.find_property("fullscreen"):
-                    try: sink.set_property("fullscreen", True)
-                    except Exception: pass
-            self.pipe.set_property("video-sink", sink)
-            self.using_overlay = True
-            self.da.connect("realize", self.on_da_realize)
-            self._update_widget_background(self.da, "white")
+        if not gtk_sink:
+            raise RuntimeError(
+                "The GStreamer 'gtksink' element is required. "
+                "On Fedora, install it with: "
+                "sudo dnf install gstreamer1-plugins-good-gtk"
+            )
+        if gtk_sink.find_property("force-aspect-ratio"):
+            gtk_sink.set_property("force-aspect-ratio", False)
+        self.pipe.set_property("video-sink", gtk_sink)
+        self.video_widget = gtk_sink.props.widget
+        self.video_widget.set_hexpand(True)
+        self.video_widget.set_vexpand(True)
+        self.overlay.add(self.video_widget)
+        # gtksink renders into this GTK widget, so Gtk.Overlay children stay
+        # above the video under both Wayland and X11.
+        self._update_widget_background(self.video_widget, "white")
 
         self._set_video_overlay_background("white")
 
@@ -380,11 +360,13 @@ class FullscreenPlayer(Gtk.Window):
             pass
         self.toast_hide_source = None
 
-        # Bible action number overlay
+        # Bible action number overlay. The video is now necessarily a GTK
+        # widget, so this label cannot fall behind a native video surface.
         self.bible_number_label = Gtk.Label()
         self.bible_number_label.set_name("bible-number-label")
         self.bible_number_label.set_halign(Gtk.Align.CENTER)
         self.bible_number_label.set_valign(Gtk.Align.CENTER)
+        self.bible_number_label.set_no_show_all(True)
         self.overlay.add_overlay(self.bible_number_label)
         try:
             self.overlay.set_overlay_pass_through(self.bible_number_label, True)
@@ -419,7 +401,7 @@ class FullscreenPlayer(Gtk.Window):
             "}",
             "#bible-number-label {",
             "    font-size: 120pt; font-weight: 800; color: white;",
-            "    padding: 12px 20px; background-color: rgba(0,0,0,0.35);",
+            "    padding: 12px 20px; background-color: rgba(0,0,0,0.55);",
             "    border-radius: 16px; text-shadow: 0 2px 4px rgba(0,0,0,0.85);",
             "}",
             ".schedule-panel { background-color: rgba(0,0,0,0.45); border-radius: 10px; padding: 8px; }",
@@ -869,12 +851,13 @@ class FullscreenPlayer(Gtk.Window):
 
     def _update_bible_number_overlay(self, path: Optional[str]):
         bible_file = "c18 - bible 4.mp4"
-        if (
+        should_show = (
             path
             and os.path.basename(path).lower() == bible_file
             and self._bible_number_overlay_armed
             and self._bible_number_value is not None
-        ):
+        )
+        if should_show:
             self.bible_number_label.set_text(str(self._bible_number_value))
             self.bible_number_label.show()
             self._bible_number_overlay_armed = False
