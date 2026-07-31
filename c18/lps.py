@@ -840,8 +840,11 @@ class FullscreenPlayer(Gtk.Window):
             return
         print(f"[INFO] Playing {path}")
         self._on_playback_started()
-        self._update_bible_number_overlay(path)
+        # Raise the video layer before showing any playback-specific overlays.
+        # Showing it afterwards can place its native window above the Bible
+        # number label, masking the number for the duration of the clip.
         self.show_video_layer()
+        self._update_bible_number_overlay(path)
         try: self.pipe.set_state(Gst.State.NULL)
         except Exception: pass
         uri = Gst.filename_to_uri(os.path.abspath(path))
