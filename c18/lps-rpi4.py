@@ -333,12 +333,12 @@ class FullscreenPlayer(Gtk.Window):
         # Clock label
         self.clock_label = Gtk.Label()
         self.clock_label.set_name("clock-label")
-        self.clock_label.set_halign(Gtk.Align.END)
+        self.clock_label.set_halign(Gtk.Align.START)
         self.clock_label.set_valign(Gtk.Align.START)
-        self.clock_label.set_margin_top(16)
-        self.clock_label.set_margin_end(24)
-        self.clock_label.set_margin_start(24)
-        self.clock_label.set_margin_bottom(16)
+        self.clock_label.set_margin_top(12)
+        self.clock_label.set_margin_start(16)
+        self.clock_label.set_margin_end(16)
+        self.clock_label.set_margin_bottom(8)
         self.overlay.add_overlay(self.clock_label)
         try:
             self.overlay.set_overlay_pass_through(self.clock_label, True)
@@ -388,9 +388,9 @@ class FullscreenPlayer(Gtk.Window):
 
         css_parts = [
             "#clock-label {",
-            "    font-size: 28pt; font-weight: 700; color: white;",
-            "    padding: 10px 14px; background-color: rgba(0,0,0,0.35);",
-            "    border-radius: 10px; text-shadow: 0 1px 2px rgba(0,0,0,0.7);",
+            "    font-size: 20pt; font-weight: 700; color: white;",
+            "    padding: 7px 10px; background-color: rgba(0,0,0,0.35);",
+            "    border-radius: 8px; text-shadow: 0 1px 2px rgba(0,0,0,0.7);",
             "}",
             "#toast-label {",
             "    font-size: 16pt; font-weight: 600; color: white;",
@@ -402,10 +402,12 @@ class FullscreenPlayer(Gtk.Window):
             "    padding: 12px 20px; background-color: rgba(0,0,0,0.55);",
             "    border-radius: 16px; text-shadow: 0 2px 4px rgba(0,0,0,0.85);",
             "}",
-            ".schedule-panel { background-color: rgba(0,0,0,0.45); border-radius: 10px; padding: 8px; }",
-            ".calendar-panel { background-color: rgba(0,0,0,0.45); border-radius: 10px; padding: 12px 16px; }",
-            "#calendar-title { font-size: 16pt; font-weight: 600; color: white; margin-bottom: 6px; }",
-            ".calendar-day-label { font-size: 12pt; color: white; padding: 4px 6px; border-radius: 6px; }",
+            ".schedule-panel { background-color: rgba(0,0,0,0.45); border-radius: 8px; padding: 5px; }",
+            "#schedule-view, #schedule-view.view { font-size: 8pt; }",
+            "#schedule-view header button { font-size: 8pt; padding: 1px 2px; min-height: 18px; }",
+            ".calendar-panel { background-color: rgba(0,0,0,0.45); border-radius: 8px; padding: 8px 10px; }",
+            "#calendar-title { font-size: 13pt; font-weight: 600; color: white; margin-bottom: 3px; }",
+            ".calendar-day-label { font-size: 9pt; color: white; padding: 2px 4px; border-radius: 5px; }",
             ".calendar-day-today { background-color: rgba(255,255,255,0.25); color: black; font-weight: 700; }",
             ".config-panel { background-color: rgba(0,0,0,0.7); border-radius: 12px; padding: 20px 28px; }",
             "#config-title { font-size: 20pt; font-weight: 700; color: white; margin-bottom: 8px; }",
@@ -1011,7 +1013,7 @@ class FullscreenPlayer(Gtk.Window):
 
     def update_clock(self):
         now = datetime.now()
-        text = now.strftime("%A  %H:%M")
+        text = now.strftime("%A %d %B %Y\n%H:%M")
         # print(f"[DEBUG] Updating clock: {text}")
         self.clock_label.set_text(text)
 
@@ -1104,12 +1106,15 @@ class FullscreenPlayer(Gtk.Window):
     def build_schedule_view(self):
         self.schedule_store = Gtk.ListStore(str, str, str, str, str, str)
         self.schedule_view = Gtk.TreeView(model=self.schedule_store)
+        self.schedule_view.set_name("schedule-view")
         self.schedule_view.set_headers_visible(True)
         self.schedule_view.set_enable_search(False)
 
         def add_col(title, col_id, align=0.0, width=None):
             renderer = Gtk.CellRendererText()
             renderer.set_property("xalign", align)
+            renderer.set_property("font", "Sans 8")
+            renderer.set_property("ypad", 0)
             column = Gtk.TreeViewColumn(title, renderer, text=col_id)
             if width:
                 column.set_min_width(width)
@@ -1117,21 +1122,21 @@ class FullscreenPlayer(Gtk.Window):
                 column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
             self.schedule_view.append_column(column)
 
-        add_col("Days", 0, 0.5, 70)
-        add_col("Time", 1, 0.5, 70)
-        add_col("±Rand", 2, 0.5, 60)
-        add_col("Dur(s)", 3, 0.5, 60)
-        add_col("Text", 4, 0.0, 320)
-        add_col("Action", 5, 0.0, 160)
+        add_col("Days", 0, 0.5, 54)
+        add_col("Time", 1, 0.5, 50)
+        add_col("Rnd", 2, 0.5, 44)
+        add_col("Dur", 3, 0.5, 42)
+        add_col("Text", 4, 0.0, 235)
+        add_col("Action", 5, 0.0, 120)
 
         self.schedule_scroller = Gtk.ScrolledWindow()
         self.schedule_scroller.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         self.schedule_scroller.add(self.schedule_view)
-        self.schedule_scroller.set_size_request(760, 260)
-        self.schedule_scroller.set_margin_start(24)
-        self.schedule_scroller.set_margin_end(24)
-        self.schedule_scroller.set_margin_bottom(24)
-        self.schedule_scroller.set_margin_top(24)
+        self.schedule_scroller.set_size_request(700, 145)
+        self.schedule_scroller.set_margin_start(6)
+        self.schedule_scroller.set_margin_end(6)
+        self.schedule_scroller.set_margin_bottom(6)
+        self.schedule_scroller.set_margin_top(4)
 
         self.schedule_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         self.schedule_box.get_style_context().add_class("schedule-panel")
@@ -1159,8 +1164,8 @@ class FullscreenPlayer(Gtk.Window):
         self.calendar_box.get_style_context().add_class("calendar-panel")
         self.calendar_box.set_halign(Gtk.Align.START)
         self.calendar_box.set_valign(Gtk.Align.START)
-        self.calendar_box.set_margin_start(24)
-        self.calendar_box.set_margin_top(24)
+        self.calendar_box.set_margin_start(16)
+        self.calendar_box.set_margin_top(122)
 
         self.calendar_title = Gtk.Label()
         self.calendar_title.set_name("calendar-title")
@@ -1168,8 +1173,8 @@ class FullscreenPlayer(Gtk.Window):
         self.calendar_box.pack_start(self.calendar_title, False, False, 0)
 
         self.calendar_grid = Gtk.Grid()
-        self.calendar_grid.set_column_spacing(8)
-        self.calendar_grid.set_row_spacing(4)
+        self.calendar_grid.set_column_spacing(5)
+        self.calendar_grid.set_row_spacing(2)
         self.calendar_box.pack_start(self.calendar_grid, True, True, 0)
 
         self.overlay.add_overlay(self.calendar_box)
