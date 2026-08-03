@@ -1150,9 +1150,15 @@ class FullscreenPlayer(Gtk.Window):
 
         # Optional day-of-month announcement (does not replace weekday greeting)
         day_of_month_variant = random.randint(1, 2)
+        """
         day_of_month_msg = os.path.join(
             base_dir_announcements,
             f"c18 - day {day_of_month}.mp4",
+        )
+        """
+        day_of_month_msg = os.path.join(
+            base_dir_announcements,
+            f"day {day_of_month}.mp4",
         )
         print(f'day_of_month_msg: {day_of_month_msg}')
         if os.path.exists(day_of_month_msg):
@@ -1162,7 +1168,7 @@ class FullscreenPlayer(Gtk.Window):
             month_name = calendar.month_name[now.month].lower()
             month_variant = random.randint(1, 3)
             month_msg = os.path.join(
-                base_dir_announcements,
+                base_dir_month,
                 f"c18 - {month_name} {month_variant}.mp4",
             )
             print(f'month_msg: {month_msg}')
