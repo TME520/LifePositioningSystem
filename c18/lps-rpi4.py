@@ -1122,7 +1122,8 @@ class FullscreenPlayer(Gtk.Window):
             f"c18 - wave hello {random.randint(1, 9)}.mp4",
         )
         base_dir_nice = "/home/tme520/Videos/LPS/c18"
-        base_dir_announcements = "/home/tme520/Videos/LPS/c18"
+        base_dir_month = "/home/tme520/Videos/LPS/c18"
+        base_dir_announcements = "/home/tme520/Videos/LPS/lps-basepack/FR"
         locale = "FR" if self.selected_language == "French" else "EN"
         startup_enqueued = []
         if os.path.exists(hello):
