@@ -252,7 +252,8 @@ def path_for_hour(hour: int) -> str:
     # C18
     # candidate = os.path.join(VIDEO_BASE_DIR, f"c18 - {hour:02d}h.mp4")
     # C10
-    candidate = os.path.join("/home/tme520/Videos/LPS/c10/announcements/FR/", f"c10 - {hour:02d}h.mp4")
+    # candidate = os.path.join("/home/tme520/Videos/LPS/c10/announcements/FR/", f"c10 - {hour:02d}h.mp4")
+    candidate = os.path.join("/home/tme520/Videos/LPS/lps-basepack/FR/", f"{hour:02d}h.mp4")
     return candidate if os.path.exists(candidate) else FALLBACK_PATH
 
 def path_for_random_proverbs() -> str:
