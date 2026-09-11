@@ -4,7 +4,8 @@ from datetime import datetime, timedelta
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
 gi.require_version('GstVideo', '1.0')
-from gi.repository import Gtk, Gst, Gdk, GLib, GstVideo
+gi.require_version('GdkPixbuf', '2.0')
+from gi.repository import Gtk, Gst, Gdk, GLib, GstVideo, GdkPixbuf
 
 from dataclasses import dataclass
 from typing import List, Dict, Optional, Tuple
@@ -162,6 +163,20 @@ def load_schedule() -> Tuple[List[ScheduleEntry], Dict[int, List[ScheduleEntry]]
 
 _RANGE_RE = re.compile(r"\[(\d+)\s*(?:\.\.|\.)\s*(\d+)\]")  # accepts [1..5] and [1.5]
 
+def expand_slideshow_paths(pattern: str) -> List[str]:
+    """Expand a numeric range in an image pattern into all candidate paths."""
+    match = _RANGE_RE.search(pattern)
+    if not match:
+        return [pattern]
+    start, end = int(match.group(1)), int(match.group(2))
+    if start > end:
+        start, end = end, start
+    return [
+        pattern[:match.start()] + str(number) + pattern[match.end():]
+        for number in range(start, end + 1)
+    ]
+
+
 def expand_play_random(pattern: str) -> str:
     def repl(m):
         a, b = int(m.group(1)), int(m.group(2))
@@ -237,7 +252,8 @@ def path_for_hour(hour: int) -> str:
     # C18
     # candidate = os.path.join(VIDEO_BASE_DIR, f"c18 - {hour:02d}h.mp4")
     # C10
-    candidate = os.path.join("/home/tme520/Videos/LPS/c10/announcements/FR/", f"c10 - {hour:02d}h.mp4")
+    # candidate = os.path.join("/home/tme520/Videos/LPS/c10/announcements/FR/", f"c10 - {hour:02d}h.mp4")
+    candidate = os.path.join("/home/tme520/Videos/LPS/lps-basepack/FR/", f"{hour:02d}h.mp4")
     return candidate if os.path.exists(candidate) else FALLBACK_PATH
 
 def path_for_random_proverbs() -> str:
@@ -271,6 +287,9 @@ class FullscreenPlayer(Gtk.Window):
         # Playback queue and state
         self.play_queue: List[str] = []
         self._playing: bool = False  # True when a video is currently playing
+        self._slideshow_source = None
+        self._slideshow_paths: List[str] = []
+        self._slideshow_last_path: Optional[str] = None
         self.proverbs_mode_enabled = False
         self._last_proverbs_play_minute: Optional[datetime] = None
 
@@ -323,6 +342,17 @@ class FullscreenPlayer(Gtk.Window):
         self.video_widget.set_hexpand(True)
         self.video_widget.set_vexpand(True)
         self.overlay.add(self.video_widget)
+
+        # The slideshow is a separate fullscreen layer below the clock and
+        # other overlays. It is hidden whenever video playback begins.
+        self.slideshow_image = Gtk.Image()
+        self.slideshow_image.set_hexpand(True)
+        self.slideshow_image.set_vexpand(True)
+        self.slideshow_image.set_halign(Gtk.Align.CENTER)
+        self.slideshow_image.set_valign(Gtk.Align.CENTER)
+        self.slideshow_image.set_no_show_all(True)
+        self.overlay.add_overlay(self.slideshow_image)
+        self.slideshow_image.hide()
 
         # gtkglsink renders into this GTK widget, so Gtk.Overlay children stay
         # above the video under both Wayland and X11.
@@ -790,6 +820,72 @@ class FullscreenPlayer(Gtk.Window):
             except Exception:
                 pass
 
+    # -------------------------- Slideshow --------------------------
+
+    def start_slideshow(self, seconds, pattern: str):
+        """Show random images at an interval until the next video starts."""
+        self._stop_slideshow()
+        try:
+            interval = max(1, int(seconds))
+        except (TypeError, ValueError):
+            print(f"[Action] Invalid Slideshow interval: {seconds!r}")
+            return
+
+        self._slideshow_paths = [
+            path for path in expand_slideshow_paths(str(pattern))
+            if path.lower().endswith(".png") and os.path.isfile(path)
+        ]
+        if not self._slideshow_paths:
+            print(f"[Action] No PNG images found for slideshow: {pattern}")
+            return
+        if self._playing:
+            print("[Action] Slideshow skipped because a video is already playing")
+            self._slideshow_paths = []
+            return
+
+        print(
+            f"[Action] Starting slideshow with {len(self._slideshow_paths)} image(s) "
+            f"at {interval}-second intervals"
+        )
+        self._show_next_slideshow_image()
+        self._slideshow_source = GLib.timeout_add_seconds(
+            interval, self._show_next_slideshow_image
+        )
+
+    def _show_next_slideshow_image(self):
+        if self._playing or not self._slideshow_paths:
+            self._stop_slideshow()
+            return False
+        choices = [
+            path for path in self._slideshow_paths
+            if path != self._slideshow_last_path
+        ] or self._slideshow_paths
+        path = random.choice(choices)
+        try:
+            width = max(1, self.get_allocated_width())
+            height = max(1, self.get_allocated_height())
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                path, width, height, True
+            )
+            self.slideshow_image.set_from_pixbuf(pixbuf)
+            self.slideshow_image.show()
+            self.slideshow_image.get_window() and self.slideshow_image.queue_draw()
+            self._slideshow_last_path = path
+            print(f"[Slideshow] Showing {path}")
+        except Exception as ex:
+            print(f"[Slideshow] Failed to display {path}: {ex}")
+        return True
+
+    def _stop_slideshow(self):
+        if self._slideshow_source is not None:
+            GLib.source_remove(self._slideshow_source)
+            self._slideshow_source = None
+        self._slideshow_paths = []
+        self._slideshow_last_path = None
+        if hasattr(self, "slideshow_image"):
+            self.slideshow_image.hide()
+            self.slideshow_image.clear()
+
     # -------------------------- Playback queue --------------------------
 
     def enqueue_file(self, path: str):
@@ -821,6 +917,7 @@ class FullscreenPlayer(Gtk.Window):
             self.try_play_next_in_queue()
             return
         print(f"[INFO] Playing {path}")
+        self._stop_slideshow()
         self._on_playback_started()
         # Raise the video layer before showing any playback-specific overlays.
         # Showing it afterwards can place its native window above the Bible
@@ -1026,7 +1123,8 @@ class FullscreenPlayer(Gtk.Window):
             f"c18 - wave hello {random.randint(1, 9)}.mp4",
         )
         base_dir_nice = "/home/tme520/Videos/LPS/c18"
-        base_dir_announcements = "/home/tme520/Videos/LPS/c18"
+        base_dir_month = "/home/tme520/Videos/LPS/c18"
+        base_dir_announcements = "/home/tme520/Videos/LPS/lps-basepack/FR"
         locale = "FR" if self.selected_language == "French" else "EN"
         startup_enqueued = []
         if os.path.exists(hello):
@@ -1053,9 +1151,15 @@ class FullscreenPlayer(Gtk.Window):
 
         # Optional day-of-month announcement (does not replace weekday greeting)
         day_of_month_variant = random.randint(1, 2)
+        """
         day_of_month_msg = os.path.join(
             base_dir_announcements,
             f"c18 - day {day_of_month}.mp4",
+        )
+        """
+        day_of_month_msg = os.path.join(
+            base_dir_announcements,
+            f"day {day_of_month}.mp4",
         )
         print(f'day_of_month_msg: {day_of_month_msg}')
         if os.path.exists(day_of_month_msg):
@@ -1063,9 +1167,9 @@ class FullscreenPlayer(Gtk.Window):
             startup_enqueued.append(day_of_month_msg)
 
             month_name = calendar.month_name[now.month].lower()
-            month_variant = random.randint(1, 3)
+            month_variant = random.randint(1, 5)
             month_msg = os.path.join(
-                base_dir_announcements,
+                base_dir_month,
                 f"c18 - {month_name} {month_variant}.mp4",
             )
             print(f'month_msg: {month_msg}')
@@ -1369,6 +1473,17 @@ class FullscreenPlayer(Gtk.Window):
         (op, val), = step.items()
         op_u = op.strip().upper()
 
+        if op_u == "SLIDESHOW":
+            if not isinstance(val, list) or len(val) != 2:
+                print(
+                    "[Action] Slideshow expects [seconds, PNG pattern]; "
+                    f"got {val!r}"
+                )
+            else:
+                self.start_slideshow(val[0], str(val[1]))
+            GLib.idle_add(self._run_steps_chain, steps, idx + 1)
+            return
+
         if op_u == "PLAY":
             self.enqueue_file(str(val))
             GLib.idle_add(self._run_steps_chain, steps, idx + 1)
@@ -1416,6 +1531,7 @@ class FullscreenPlayer(Gtk.Window):
         self.quit_cleanly()
 
     def quit_cleanly(self):
+        self._stop_slideshow()
         try: self.pipe.set_state(Gst.State.NULL)
         except Exception: pass
         Gtk.main_quit()
