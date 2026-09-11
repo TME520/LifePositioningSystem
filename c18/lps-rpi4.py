@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import gi, os, json, re, random, calendar
+import gi, os, json, re, random, calendar, glob
 from datetime import datetime, timedelta
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
@@ -236,6 +236,9 @@ Gst.init(None)
 # Fallback if the hour-mapped file doesn't exist
 FALLBACK_PATH = "/home/tme520/Videos/LPS/c18/c18 - sitting 1.mp4"
 VIDEO_BASE_DIR = "/home/tme520/Videos/LPS/c18"
+VOYAGE_SLIDESHOW_DIR = "/home/tme520/Videos/LPS/lps-basepack/slideshow/mystery"
+VOYAGE_MUSIC_DIR = "/home/tme520/Music/LPS"
+VOYAGE_SLIDE_SECONDS = 10
 PROVERBS_MIN_NUMBER = 1
 PROVERBS_MAX_NUMBER = 147
 WEEKDAY_NAMES = [
@@ -290,6 +293,10 @@ class FullscreenPlayer(Gtk.Window):
         self._slideshow_source = None
         self._slideshow_paths: List[str] = []
         self._slideshow_last_path: Optional[str] = None
+        self.voyage_mode_enabled = False
+        self._voyage_image_index = 0
+        self._voyage_music_paths: List[str] = []
+        self._voyage_music_index = 0
         self.proverbs_mode_enabled = False
         self._last_proverbs_play_minute: Optional[datetime] = None
 
@@ -824,6 +831,9 @@ class FullscreenPlayer(Gtk.Window):
 
     def start_slideshow(self, seconds, pattern: str):
         """Show random images at an interval until the next video starts."""
+        if self.voyage_mode_enabled:
+            print("[Action] Slideshow action ignored because Voyage mode is enabled")
+            return
         self._stop_slideshow()
         try:
             interval = max(1, int(seconds))
@@ -889,6 +899,9 @@ class FullscreenPlayer(Gtk.Window):
     # -------------------------- Playback queue --------------------------
 
     def enqueue_file(self, path: str):
+        if self.voyage_mode_enabled:
+            print(f"[INFO] Video playback disabled in Voyage mode: {path}")
+            return
         if not path or not os.path.exists(path):
             print(f"[ERROR] File not found, skipping: {path}")
             return
@@ -911,6 +924,9 @@ class FullscreenPlayer(Gtk.Window):
         return False
 
     def play_file(self, path: str):
+        if self.voyage_mode_enabled:
+            print(f"[INFO] Video playback disabled in Voyage mode: {path}")
+            return
         if not path or not os.path.exists(path):
             print(f"[ERROR] File not found: {path}")
             # If this was supposed to start immediately, try next queued item
@@ -964,6 +980,9 @@ class FullscreenPlayer(Gtk.Window):
     # -------------------------- GStreamer bus --------------------------
 
     def on_eos(self, *_):
+        if self.voyage_mode_enabled:
+            self._play_next_voyage_song()
+            return
         # Video finished; start next if queued
         self._playing = False
         self.try_play_next_in_queue()
@@ -971,6 +990,9 @@ class FullscreenPlayer(Gtk.Window):
     def on_error(self, bus, msg):
         err, debug = msg.parse_error()
         print(f"[ERROR][GStreamer] Error: {err}; debug: {debug}")
+        if self.voyage_mode_enabled:
+            self._play_next_voyage_song()
+            return
         self._playing = False
         self.try_play_next_in_queue()
 
@@ -1019,8 +1041,108 @@ class FullscreenPlayer(Gtk.Window):
         elif event.keyval in (Gdk.KEY_p, Gdk.KEY_P):
             print("[DEBUG] P key pressed")
             self.toggle_proverbs_mode()
+        elif event.keyval in (Gdk.KEY_v, Gdk.KEY_V):
+            print("[DEBUG] V key pressed")
+            self.toggle_voyage_mode()
         self.highlight_next_upcoming()
         GLib.timeout_add_seconds(60, self._periodic_highlight)
+
+    def toggle_voyage_mode(self):
+        self.voyage_mode_enabled = not self.voyage_mode_enabled
+        if self.voyage_mode_enabled:
+            self._enable_voyage_mode()
+        else:
+            self._disable_voyage_mode()
+
+    def _enable_voyage_mode(self):
+        print("[INFO] Voyage mode enabled")
+        self.proverbs_mode_enabled = False
+        self._last_proverbs_play_minute = None
+        self.play_queue.clear()
+        self._cancel_step_timer()
+        self._action_running = False
+        self._current_action_name = None
+        self._stop_slideshow()
+        try:
+            self.pipe.set_state(Gst.State.NULL)
+        except Exception:
+            pass
+        self._playing = False
+        self.show_clock_only()
+
+        self._slideshow_paths = sorted(
+            glob.glob(os.path.join(VOYAGE_SLIDESHOW_DIR, "*.png")),
+            key=str.casefold,
+        )
+        self._voyage_image_index = 0
+        if self._slideshow_paths:
+            self._show_next_voyage_image()
+            self._slideshow_source = GLib.timeout_add_seconds(
+                VOYAGE_SLIDE_SECONDS, self._show_next_voyage_image
+            )
+        else:
+            print(f"[WARN][Voyage] No PNG images found in {VOYAGE_SLIDESHOW_DIR}")
+
+        self._voyage_music_paths = sorted(
+            glob.glob(os.path.join(VOYAGE_MUSIC_DIR, "*.mp3")),
+            key=str.casefold,
+        )
+        self._voyage_music_index = 0
+        if self._voyage_music_paths:
+            self._play_next_voyage_song()
+        else:
+            print(f"[WARN][Voyage] No MP3 files found in {VOYAGE_MUSIC_DIR}")
+        self.show_toast("Voyage mode ON")
+
+    def _disable_voyage_mode(self):
+        print("[INFO] Voyage mode disabled")
+        try:
+            self.pipe.set_state(Gst.State.NULL)
+        except Exception:
+            pass
+        self._playing = False
+        self._voyage_music_paths = []
+        self._voyage_music_index = 0
+        self._stop_slideshow()
+        self.stop_to_clock()
+        self.show_toast("Voyage mode OFF")
+
+    def _show_next_voyage_image(self):
+        if not self.voyage_mode_enabled or not self._slideshow_paths:
+            return False
+        path = self._slideshow_paths[self._voyage_image_index]
+        self._voyage_image_index = (
+            self._voyage_image_index + 1
+        ) % len(self._slideshow_paths)
+        try:
+            width = max(1, self.get_allocated_width())
+            height = max(1, self.get_allocated_height())
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                path, width, height, True
+            )
+            self.slideshow_image.set_from_pixbuf(pixbuf)
+            self.slideshow_image.show()
+            self.slideshow_image.queue_draw()
+            print(f"[Voyage] Showing {path}")
+        except Exception as ex:
+            print(f"[WARN][Voyage] Failed to display {path}: {ex}")
+        return True
+
+    def _play_next_voyage_song(self):
+        if not self.voyage_mode_enabled or not self._voyage_music_paths:
+            return
+        path = self._voyage_music_paths[self._voyage_music_index]
+        self._voyage_music_index = (
+            self._voyage_music_index + 1
+        ) % len(self._voyage_music_paths)
+        print(f"[Voyage] Playing {path}")
+        try:
+            self.pipe.set_state(Gst.State.NULL)
+            self.pipe.set_property("uri", Gst.filename_to_uri(os.path.abspath(path)))
+            self.pipe.set_state(Gst.State.PLAYING)
+            self._playing = True
+        except Exception as ex:
+            print(f"[WARN][Voyage] Failed to play {path}: {ex}")
 
     def _play_manual_action_once(self, action_name: str):
         """Trigger a manual action while ignoring rapid repeat events."""
@@ -1038,6 +1160,9 @@ class FullscreenPlayer(Gtk.Window):
         self.run_action(action_name)
 
     def toggle_proverbs_mode(self):
+        if self.voyage_mode_enabled:
+            print("[INFO] Bible Proverbs mode is disabled in Voyage mode")
+            return
         self.proverbs_mode_enabled = not self.proverbs_mode_enabled
         if self.proverbs_mode_enabled:
             self._enable_proverbs_mode()
@@ -1084,6 +1209,11 @@ class FullscreenPlayer(Gtk.Window):
     def tick(self):
         self.update_clock()
         now = datetime.now()
+        if self.voyage_mode_enabled:
+            # Keep time bookkeeping current, but suppress hour videos, greetings,
+            # Proverbs playback, and every scheduled action while Voyage is on.
+            self.last_seen_hour = now.hour
+            return True
         # New day? reset offsets / fired flags
         if now.date() != self._today_key:
             print("[INFO] New day")
@@ -1437,6 +1567,9 @@ class FullscreenPlayer(Gtk.Window):
     # -------------------------- Action runner --------------------------
 
     def run_action(self, action_name: str):
+        if self.voyage_mode_enabled:
+            print(f"[Action] Ignoring {action_name} because Voyage mode is enabled")
+            return
         if self.proverbs_mode_enabled:
             print(f"[Action] Ignoring {action_name} because Bible Proverbs mode is enabled")
             return
@@ -1456,6 +1589,10 @@ class FullscreenPlayer(Gtk.Window):
         self._run_steps_chain(list(steps), 0)
 
     def _run_steps_chain(self, steps: List[Dict[str, str]], idx: int):
+        if self.voyage_mode_enabled:
+            self._action_running = False
+            self._current_action_name = None
+            return
         # If finished
         if idx >= len(steps):
             print(f"[Action] Finished {self._current_action_name}")
