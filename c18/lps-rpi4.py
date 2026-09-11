@@ -1167,7 +1167,7 @@ class FullscreenPlayer(Gtk.Window):
             startup_enqueued.append(day_of_month_msg)
 
             month_name = calendar.month_name[now.month].lower()
-            month_variant = random.randint(1, 3)
+            month_variant = random.randint(1, 5)
             month_msg = os.path.join(
                 base_dir_month,
                 f"c18 - {month_name} {month_variant}.mp4",
