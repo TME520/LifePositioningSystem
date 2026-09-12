@@ -1005,8 +1005,14 @@ class FullscreenPlayer(Gtk.Window):
             return
         if new_state == Gst.State.PLAYING:
             self.hide_config_if_visible()
-            self._update_background_state(True)
-            self._set_window_background_color(self._white_rgba)
+            if self.voyage_mode_enabled:
+                # Voyage uses the same black canvas as the normal slideshow.
+                # Audio playback must not switch the window to video-white.
+                self._update_background_state(False)
+                self._set_window_background_color(self._black_rgba)
+            else:
+                self._update_background_state(True)
+                self._set_window_background_color(self._white_rgba)
         elif new_state in (Gst.State.NULL, Gst.State.READY, Gst.State.PAUSED):
             if not self._playing and not self.play_queue:
                 self._update_background_state(False)
@@ -1069,6 +1075,8 @@ class FullscreenPlayer(Gtk.Window):
             pass
         self._playing = False
         self.show_clock_only()
+        self._update_background_state(False)
+        self._set_window_background_color(self._black_rgba)
 
         self._slideshow_paths = sorted(
             glob.glob(os.path.join(VOYAGE_SLIDESHOW_DIR, "*.png")),
