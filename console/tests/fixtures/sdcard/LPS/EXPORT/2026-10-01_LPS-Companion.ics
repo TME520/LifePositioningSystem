@@ -1,0 +1,12 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//LPS Companion//EN
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+UID:lps-companion-20261001@picocalc
+DTSTART;VALUE=DATE:20261001
+DTEND;VALUE=DATE:20261002
+SUMMARY:LPS Companion
+DESCRIPTION:Activities: Walk, Diet, Bible\NXP: +40 (total 140)\NExpected weight: 110.500 kg\NActual weight: 111.200 kg\NNote: Good day\, rain\; path C:\\tmp
+END:VEVENT
+END:VCALENDAR
