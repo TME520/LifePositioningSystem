@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+# LPS Console launcher: runs the package next to this script (no install needed).
+here=$(cd "$(dirname "$0")" && pwd)
+PYTHONPATH="$here${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m lpsconsole "$@"
