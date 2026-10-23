@@ -143,8 +143,12 @@ cd console
 ./lps-console --import /media/$USER/PICOCALC          # import the SD card, then open the UI
 ./lps-console --import /media/$USER/PICOCALC/LPS --import-save --no-ui
 ./lps-console --export-dir /media/$USER/PICOCALC/LPS  # write exports straight to the SD card
+./lps-console --lang fr                               # set and save the language
+./lps-console --data-dir /tmp/lps-test                # use another state folder
 python3 -m unittest discover -s tests -t .            # tests (from console/)
 ```
+
+Options: `--data-dir`, `--export-dir`, `--import PATH`, `--import-save`, `--no-ui`, `--lang {en,fr}` (see `./lps-console --help`).
 
 ### Keys
 
@@ -176,6 +180,9 @@ Same menu as the Companion:
   - F4 or `-` move up, F5 or `+` move down;
   - Left/Right change column.
 - **Reminders**: `N`, Enter, Del.
+- **Weight**: Up/Down or Tab switch field, Enter saves; blank = not recorded.
+- **Daily review**: Up/Down scroll one line, Left/Right scroll eight lines.
+- **Config**: 1 Language, 2 Colors (preview with Up/Down or `1`-`5`, Enter saves), 3 Save, 4 Import.
 - **Timer**: Enter pauses or resumes, Esc cancels.
 - **Rosary**: Enter or Right advance, Left goes back, Esc leaves the session.
 - **Import**: type the path, Tab toggles reading `SAVE_A/B.BIN`, Enter imports.
